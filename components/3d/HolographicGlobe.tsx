@@ -19,6 +19,21 @@ declare global {
   }
 }
 
+// Augment React's JSX namespace specifically for React 18+ type definitions
+declare module 'react' {
+  namespace JSX {
+    interface IntrinsicElements {
+      ambientLight: any;
+      group: any;
+      mesh: any;
+      meshBasicMaterial: any;
+      meshPhongMaterial: any;
+      pointLight: any;
+      sphereGeometry: any;
+    }
+  }
+}
+
 // Helper to convert lat/lon to 3D position
 const calcPosFromLatLonRad = (lat: number, lon: number, radius: number) => {
   const phi = (90 - lat) * (Math.PI / 180);
