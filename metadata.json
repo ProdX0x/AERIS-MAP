@@ -1,0 +1,8 @@
+{
+  "name": "Copy of Oracle Navigator",
+  "description": "A next-generation immersive 3D world discovery app featuring iOS 18 inspired glassmorphism, interactive 3D mapping, and intelligent event tracking.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
