@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAppViewModel } from './viewmodels/useAppViewModel';
 import { NavTab } from './types';
@@ -33,7 +32,7 @@ const App: React.FC = () => {
           />
         );
       case NavTab.CREATE:
-        return <CreateView />;
+        return <CreateView onPublish={vm.publishEvent} />;
       case NavTab.PROFILE:
         return (
           <div className="w-full h-full flex items-center justify-center bg-[#050b14]">

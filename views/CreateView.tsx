@@ -1,13 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GlassPanel } from '../components/ui/GlassPanel';
 import { Button } from '../components/ui/Button';
-import { Camera, Image as ImageIcon, Mic, FileText, ChevronDown, ChevronLeft } from 'lucide-react';
+import { Camera, Image as ImageIcon, Mic, FileText, ChevronDown, ChevronLeft, Loader2 } from 'lucide-react';
 
-export const CreateView: React.FC = () => {
+interface CreateViewProps {
+  onPublish: (data: { title: string; description: string; category: string }) => void;
+}
+
+export const CreateView: React.FC<CreateViewProps> = ({ onPublish }) => {
+  const [isUploading, setIsUploading] = useState(false);
+  const [formData, setFormData] = useState({
+    title: 'Summer Music Festival 2024',
+    description: 'Join us for a weekend of live music, food, and fun under the stars.',
+    category: 'Music Festival'
+  });
+
+  const handlePublish = () => {
+    if (!formData.title) return;
+
+    setIsUploading(true);
+    
+    // Simulate network upload delay
+    setTimeout(() => {
+      onPublish(formData);
+      setIsUploading(false);
+    }, 1500);
+  };
+
   return (
     <div className="w-full h-full overflow-y-auto pt-12 pb-24 px-4 bg-[#050b14]">
       <div className="flex items-center mb-6">
-        <ChevronLeft className="text-gray-400 mr-2" />
+        <ChevronLeft className="text-gray-400 mr-2 cursor-pointer" />
         <h1 className="text-lg font-semibold text-white mx-auto pr-6">PUBLISH NEW EVENT</h1>
       </div>
 
@@ -29,8 +52,8 @@ export const CreateView: React.FC = () => {
                   { icon: <Mic />, label: 'AUDIO' },
                   { icon: <FileText />, label: 'DOCUMENT' },
                 ].map((item, i) => (
-                  <div key={i} className="flex flex-col items-center gap-2">
-                     <div className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all cursor-pointer ${i === 0 ? 'bg-cyan-500/20 border-cyan-400 text-cyan-400' : 'bg-white/5 border-white/10 text-gray-400'}`}>
+                  <div key={i} className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
+                     <div className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all ${i === 0 ? 'bg-cyan-500/20 border-cyan-400 text-cyan-400' : 'bg-white/5 border-white/10 text-gray-400'}`}>
                         {item.icon}
                      </div>
                      <span className="text-[8px] text-gray-500 font-medium">{item.label}</span>
@@ -41,10 +64,10 @@ export const CreateView: React.FC = () => {
              <div className="mt-4">
                <div className="flex justify-between text-[10px] mb-1">
                  <span className="text-cyan-400">Uploading...</span>
-                 <span className="text-cyan-400">45%</span>
+                 <span className="text-cyan-400">100%</span>
                </div>
                <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
-                 <div className="h-full bg-cyan-500 w-[45%]"></div>
+                 <div className="h-full bg-cyan-500 w-full"></div>
                </div>
              </div>
           </div>
@@ -54,18 +77,26 @@ export const CreateView: React.FC = () => {
         <div className="space-y-4">
           <div>
             <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Event Title</label>
-            <GlassPanel className="flex items-center justify-between !py-3 !px-4 !rounded-xl border border-white/10">
-              <span className="text-sm text-white">Summer Music Festival 2024</span>
-              <SearchIcon className="w-4 h-4 text-gray-500" />
+            <GlassPanel className="flex items-center justify-between !py-2 !px-4 !rounded-xl border border-white/10 focus-within:border-cyan-500/50 transition-colors">
+              <input 
+                type="text" 
+                value={formData.title}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
+                className="w-full bg-transparent border-none outline-none text-sm text-white placeholder-gray-600"
+                placeholder="Enter event title..."
+              />
             </GlassPanel>
           </div>
 
           <div>
              <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Description</label>
-             <GlassPanel className="!p-4 !rounded-xl border border-white/10">
-               <p className="text-xs text-gray-400 leading-relaxed">
-                 Join us for a weekend of live music, food, food, and fun under the stars.
-               </p>
+             <GlassPanel className="!p-2 !rounded-xl border border-white/10 focus-within:border-cyan-500/50 transition-colors">
+               <textarea 
+                 value={formData.description}
+                 onChange={(e) => setFormData({...formData, description: e.target.value})}
+                 className="w-full bg-transparent border-none outline-none text-xs text-gray-300 leading-relaxed resize-none h-20 p-2"
+                 placeholder="Describe your event..."
+               />
              </GlassPanel>
           </div>
 
@@ -74,7 +105,7 @@ export const CreateView: React.FC = () => {
                 <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Schedule</label>
                 <GlassPanel className="!py-3 !px-3 !rounded-xl border border-white/10 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs text-gray-300">
-                    <span>📅</span> 2024-07-15
+                    <span>📅</span> Now (Live)
                   </div>
                   <ChevronDown size={14} className="text-gray-500" />
                 </GlassPanel>
@@ -83,7 +114,7 @@ export const CreateView: React.FC = () => {
                 <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Category</label>
                 <GlassPanel className="!py-3 !px-3 !rounded-xl border border-white/10 flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs text-gray-300">
-                    <span>📍</span> Music Festival
+                    <span>📍</span> {formData.category}
                   </div>
                   <ChevronDown size={14} className="text-gray-500" />
                 </GlassPanel>
@@ -104,8 +135,8 @@ export const CreateView: React.FC = () => {
                 {/* Hexagon Preview */}
                 <div className="relative w-24 h-24 flex items-center justify-center">
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20 clip-path-hexagon"></div>
-                    <div className="text-center z-10">
-                       <p className="text-[8px] font-bold text-white mb-1">Summer Music<br/>Festival</p>
+                    <div className="text-center z-10 max-w-[80px]">
+                       <p className="text-[8px] font-bold text-white mb-1 truncate">{formData.title}</p>
                        <div className="flex gap-1 justify-center opacity-50">
                          <div className="w-3 h-3 bg-white/20 rounded-sm"></div>
                          <div className="w-3 h-3 bg-white/20 rounded-sm"></div>
@@ -117,18 +148,23 @@ export const CreateView: React.FC = () => {
           <p className="text-[10px] text-gray-500 text-center mt-2">How it appears on map & AR</p>
         </div>
 
-        <Button size="lg" className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 border-none shadow-lg shadow-purple-900/50">
-          PUBLISH EVENT
+        <Button 
+          size="lg" 
+          onClick={handlePublish}
+          disabled={isUploading}
+          className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 border-none shadow-lg shadow-purple-900/50 disabled:opacity-70"
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="animate-spin mr-2" size={18} />
+              PUBLISHING...
+            </>
+          ) : (
+            "PUBLISH EVENT"
+          )}
         </Button>
 
       </div>
     </div>
   );
 };
-
-// Helper for search icon in form
-const SearchIcon = ({className}: {className?: string}) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-  </svg>
-);
