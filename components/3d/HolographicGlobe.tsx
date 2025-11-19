@@ -4,6 +4,21 @@ import { OrbitControls, Sphere, Points, PointMaterial, Stars } from '@react-thre
 import * as THREE from 'three';
 import { Place } from '../../types';
 
+// Augment JSX namespace to support React Three Fiber intrinsic elements
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      ambientLight: any;
+      pointLight: any;
+      group: any;
+      mesh: any;
+      sphereGeometry: any;
+      meshPhongMaterial: any;
+      meshBasicMaterial: any;
+    }
+  }
+}
+
 // Helper to convert lat/lon to 3D position
 const calcPosFromLatLonRad = (lat: number, lon: number, radius: number) => {
   const phi = (90 - lat) * (Math.PI / 180);

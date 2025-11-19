@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAppViewModel } from './viewmodels/useAppViewModel';
 import { NavTab } from './types';
@@ -5,6 +6,7 @@ import { MapView } from './views/MapView';
 import { EventsView } from './views/EventsView';
 import { CreateView } from './views/CreateView';
 import { PlaceDetailView } from './views/PlaceDetailView';
+import { ARView } from './views/ARView';
 import { BottomBar } from './components/Navigation/BottomBar';
 import { TopBar } from './components/Navigation/TopBar';
 import { User } from 'lucide-react';
@@ -68,18 +70,9 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* AR Mode Overlay (Simulated) */}
+      {/* AR Mode Overlay */}
       {vm.arMode && (
-        <div className="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center animate-in fade-in">
-           <p className="text-cyan-400 mb-4 text-lg font-mono animate-pulse">INITIALIZING AR SENSORS...</p>
-           <div className="w-64 h-64 border border-cyan-500/30 rounded-full animate-spin border-t-cyan-400"></div>
-           <button 
-             onClick={vm.toggleArMode} 
-             className="mt-12 text-white underline underline-offset-4 hover:text-cyan-400"
-           >
-             Cancel
-           </button>
-        </div>
+        <ARView onExit={vm.toggleArMode} />
       )}
 
       {/* Bottom Navigation */}
