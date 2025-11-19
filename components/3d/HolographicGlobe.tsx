@@ -9,12 +9,12 @@ declare global {
   namespace JSX {
     interface IntrinsicElements {
       ambientLight: any;
-      pointLight: any;
       group: any;
       mesh: any;
-      sphereGeometry: any;
-      meshPhongMaterial: any;
       meshBasicMaterial: any;
+      meshPhongMaterial: any;
+      pointLight: any;
+      sphereGeometry: any;
     }
   }
 }
