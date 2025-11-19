@@ -72,7 +72,10 @@ const App: React.FC = () => {
 
       {/* AR Mode Overlay */}
       {vm.arMode && (
-        <ARView onExit={vm.toggleArMode} />
+        <ARView 
+          onExit={vm.toggleArMode} 
+          onSelectPlace={vm.selectPlace}
+        />
       )}
 
       {/* Bottom Navigation */}

@@ -11,7 +11,7 @@ interface PlaceDetailViewProps {
 
 export const PlaceDetailView: React.FC<PlaceDetailViewProps> = ({ place, onClose }) => {
   return (
-    <div className="absolute inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="absolute inset-0" onClick={onClose}></div>
       
       <GlassPanel className="relative w-full max-w-md max-h-[90vh] overflow-y-auto !p-0 !rounded-t-[40px] sm:!rounded-[40px] border-t border-white/20 sm:border shadow-2xl animate-in slide-in-from-bottom duration-300">

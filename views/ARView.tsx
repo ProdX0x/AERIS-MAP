@@ -23,9 +23,10 @@ declare global {
 
 interface ARViewProps {
   onExit: () => void;
+  onSelectPlace: (id: string) => void;
 }
 
-const ARMarker = ({ place, position, delay }: { place: Place; position: [number, number, number], delay: number }) => {
+const ARMarker = ({ place, position, delay, onSelect }: { place: Place; position: [number, number, number], delay: number, onSelect: (id: string) => void }) => {
   const groupRef = useRef<THREE.Group>(null);
   
   useFrame((state) => {
@@ -52,14 +53,20 @@ const ARMarker = ({ place, position, delay }: { place: Place; position: [number,
       </mesh>
 
       {/* 
-        FIX: Reduced distanceFactor from 24 to 4 to prevent giant elements on mobile.
+        FIX: Reduced distanceFactor to prevent giant elements on mobile.
         Removed 'sprite' prop to allow proper 3D transform perspective.
       */}
-      <Html position={[0, 0, 0]} center transform distanceFactor={4} zIndexRange={[100, 0]}>
+      <Html position={[0, 0, 0]} center transform distanceFactor={3} zIndexRange={[100, 0]}>
         <div className="flex flex-col items-center group cursor-pointer pointer-events-none origin-center transition-transform">
           
-          {/* Card Container - constrained width for mobile */}
-          <div className="pointer-events-auto relative bg-black/80 backdrop-blur-xl border border-cyan-500/40 p-3 rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.2)] w-[180px] sm:w-[240px] transition-all duration-300 hover:scale-105 hover:border-cyan-300 hover:bg-black/90">
+          {/* Card Container - constrained width for mobile, clickable */}
+          <div 
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(place.id);
+            }}
+            className="pointer-events-auto relative bg-black/80 backdrop-blur-xl border border-cyan-500/40 p-3 rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.2)] w-[160px] sm:w-[240px] transition-all duration-300 hover:scale-105 hover:border-cyan-300 hover:bg-black/90 active:scale-95 cursor-pointer"
+          >
              {/* Decorative Corners */}
              <div className="absolute -top-px -left-px w-2 h-2 border-t border-l border-cyan-400 rounded-tl"></div>
              <div className="absolute -top-px -right-px w-2 h-2 border-t border-r border-cyan-400 rounded-tr"></div>
@@ -79,7 +86,7 @@ const ARMarker = ({ place, position, delay }: { place: Place; position: [number,
              <p className="text-[9px] text-gray-300 line-clamp-2 leading-relaxed mb-2 opacity-80 hidden sm:block">{place.description}</p>
              
              <button className="w-full py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-[8px] sm:text-[9px] font-bold text-cyan-300 transition-all uppercase flex items-center justify-center gap-1.5">
-               <span>Navigate</span>
+               <span>View Details</span>
                <Navigation size={8} />
              </button>
           </div>
@@ -93,7 +100,7 @@ const ARMarker = ({ place, position, delay }: { place: Place; position: [number,
   );
 };
 
-export const ARView: React.FC<ARViewProps> = ({ onExit }) => {
+export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraReady, setCameraReady] = useState(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
@@ -138,10 +145,10 @@ export const ARView: React.FC<ARViewProps> = ({ onExit }) => {
   const arPlaces = React.useMemo(() => MOCK_PLACES.map((place, i) => {
     const angle = (i * (Math.PI * 2)) / MOCK_PLACES.length; // Even spread
     const radius = 5; // 5 meters radius
+    // Push them slightly further back (z -6) so they don't start "in" the user
     return {
       ...place,
-      // Position in a circle around user
-      position: [Math.sin(angle) * radius, 0, -Math.cos(angle) * radius] as [number, number, number]
+      position: [Math.sin(angle) * radius, 0, -6 + (-Math.cos(angle) * radius)] as [number, number, number]
     };
   }), []);
 
@@ -167,7 +174,7 @@ export const ARView: React.FC<ARViewProps> = ({ onExit }) => {
          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(0,0,0,0.8)_100%)]"></div>
          
          {/* Top HUD Bar - Safe Area Aware */}
-         <div className="w-full px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-4 flex justify-between items-start z-20 bg-gradient-to-b from-black/80 to-transparent pointer-events-auto">
+         <div className="w-full px-4 pt-[max(2rem,env(safe-area-inset-top))] pb-4 flex justify-between items-start z-20 bg-gradient-to-b from-black/80 to-transparent pointer-events-auto">
             <div>
                <div className="flex items-center gap-2 mb-1">
                   <div className={`w-1.5 h-1.5 rounded-full animate-pulse shadow-[0_0_8px] ${permissionDenied ? 'bg-red-500 shadow-red-500' : 'bg-green-500 shadow-green-500'}`}></div>
@@ -175,14 +182,14 @@ export const ARView: React.FC<ARViewProps> = ({ onExit }) => {
                     {permissionDenied ? 'SIMULATOR' : 'LIVE FEED'}
                   </span>
                </div>
-               <h1 className="text-xl font-black text-white tracking-tighter italic leading-none">
+               <h1 className="text-lg font-black text-white tracking-tighter italic leading-none">
                  VISION<span className="text-cyan-400">AR</span>
                </h1>
             </div>
             
             <div className="flex gap-3 items-center">
                 {/* Radar Widget */}
-                <div className="w-12 h-12 rounded-full bg-black/40 border border-cyan-500/30 backdrop-blur-md relative flex items-center justify-center overflow-hidden">
+                <div className="w-10 h-10 rounded-full bg-black/40 border border-cyan-500/30 backdrop-blur-md relative flex items-center justify-center overflow-hidden">
                    <div className="absolute inset-0 border border-cyan-500/10 rounded-full scale-50"></div>
                    <div className="w-full h-[1px] bg-cyan-500/20 absolute top-1/2"></div>
                    <div className="h-full w-[1px] bg-cyan-500/20 absolute left-1/2"></div>
@@ -221,8 +228,8 @@ export const ARView: React.FC<ARViewProps> = ({ onExit }) => {
          <div className="w-full px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-8 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-auto">
             {/* Navigation Prompt */}
             <div className="text-center mb-4">
-              <span className="inline-block px-3 py-1 rounded-full bg-black/60 border border-cyan-500/30 text-[10px] font-mono text-cyan-300 uppercase tracking-widest backdrop-blur-md">
-                 {arPlaces.length} POI Detected • Move to Explore
+              <span className="inline-block px-3 py-1 rounded-full bg-black/60 border border-cyan-500/30 text-[10px] font-mono text-cyan-300 uppercase tracking-widest backdrop-blur-md animate-pulse">
+                 Locating Targets...
               </span>
             </div>
 
@@ -230,8 +237,8 @@ export const ARView: React.FC<ARViewProps> = ({ onExit }) => {
             <div className="grid grid-cols-3 gap-2">
                {[
                  { label: 'SENSORS', value: 'ACTIVE', color: 'text-green-400' },
-                 { label: 'DISTANCE', value: '150m', color: 'text-cyan-400' },
-                 { label: 'GPS', value: '±3m', color: 'text-yellow-400' },
+                 { label: 'DETECTED', value: `${arPlaces.length} POI`, color: 'text-cyan-400' },
+                 { label: 'GPS', value: 'LOCKED', color: 'text-yellow-400' },
                ].map((stat, i) => (
                  <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-2 backdrop-blur-sm text-center">
                     <p className="text-[8px] text-gray-500 tracking-widest mb-0.5">{stat.label}</p>
@@ -254,6 +261,7 @@ export const ARView: React.FC<ARViewProps> = ({ onExit }) => {
                place={place} 
                position={place.position} 
                delay={i}
+               onSelect={onSelectPlace}
              />
            ))}
         </Canvas>
