@@ -76,13 +76,12 @@ const ARMarker = ({
       // 3. LOD Logic
       setIsFar(dist > 12);
 
-      // 4. Pulsing Effect (Breathing) for Near View
+      // 4. Group Scaling (Subtle pulse for anchor)
       if (!isFar) {
-        // Sine wave between 0.98 and 1.02 scale
-        const pulse = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.02;
-        groupRef.current.scale.set(pulse, pulse, pulse);
+         // Keep the 3D anchor relatively stable, the HTML card handles its own animation
+         groupRef.current.scale.set(1, 1, 1);
       } else {
-        groupRef.current.scale.set(1, 1, 1);
+         groupRef.current.scale.set(1, 1, 1);
       }
     }
   });
@@ -116,10 +115,22 @@ const ARMarker = ({
           <Html position={[0, 0, 0]} center transform distanceFactor={4} zIndexRange={[100, 0]}>
             <div ref={cardRef} className={`flex flex-col items-center group cursor-pointer pointer-events-none origin-center transition-all duration-300 animate-in zoom-in ${isClicked ? 'scale-95' : ''}`}>
               
-              {/* Card Container with Scanning Effect */}
+              {/* CSS Animation Styles Injection */}
+              <style>{`
+                @keyframes breathe {
+                  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(6,182,212,0.2)); }
+                  50% { transform: scale(1.03); filter: drop-shadow(0 0 25px rgba(6,182,212,0.4)); }
+                }
+                .animate-breathe {
+                  animation: breathe 4s ease-in-out infinite;
+                }
+              `}</style>
+
+              {/* Card Container with Scanning Effect & Breathing Animation */}
               <div 
                 onClick={handleSelect}
                 className={`
+                  animate-breathe
                   pointer-events-auto relative bg-black/80 backdrop-blur-xl 
                   border p-3 rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.2)] 
                   w-[160px] sm:w-[240px] transition-all duration-200 
@@ -198,47 +209,45 @@ const ARMarker = ({
   );
 };
 
-// Helper component to sync camera rotation with DOM Compass
-const CompassController = ({ onUpdate }: { onUpdate: (deg: number) => void }) => {
+// Helper component to sync camera rotation with DOM Compass directly (No React State = 60fps)
+const CompassController = ({ compassRef }: { compassRef: React.RefObject<HTMLDivElement> }) => {
   const { camera } = useThree();
   
   useFrame(() => {
+    if (!compassRef.current) return;
+
     // Get camera rotation in Y axis (azimuth)
-    // Note: Real device orientation is complex, this is a simplification for the simulation
     const vector = new THREE.Vector3(0, 0, -1);
     vector.applyQuaternion(camera.quaternion);
     const angle = Math.atan2(vector.x, vector.z);
-    const degrees = THREE.MathUtils.radToDeg(angle);
+    let degrees = THREE.MathUtils.radToDeg(angle);
     
     // Normalize to 0-360
-    let normDegrees = degrees;
-    if (normDegrees < 0) normDegrees += 360;
+    if (degrees < 0) degrees += 360;
     
-    onUpdate(normDegrees);
+    // Update DOM directly
+    // 360 degrees = 2000px width approx logic from CSS
+    const xOffset = (degrees / 360) * 100; 
+    compassRef.current.style.transform = `translateX(calc(50% - ${xOffset * 20}px))`;
   });
   
   return null;
 };
 
-const CompassStrip = ({ degrees }: { degrees: number }) => {
-  // Create a sliding strip effect
-  // 360 degrees = 100% of the strip width ideally, but here we simulate it
-  // We create a long strip of text and slide it
-  
-  const xOffset = (degrees / 360) * 100; // Percentage offset
-  
+const CompassStrip = React.forwardRef<HTMLDivElement>((props, ref) => {
   return (
     <div className="absolute top-16 left-0 right-0 flex justify-center pointer-events-none opacity-80 overflow-hidden z-30">
       <div className="w-[300px] h-10 relative mask-linear-fade bg-black/20 backdrop-blur-sm border-b border-white/10">
          {/* Center Indicator */}
          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-3 bg-cyan-400 z-10 shadow-[0_0_8px_cyan]"></div>
          
-         {/* Sliding Container */}
+         {/* Sliding Container - Controlled via Ref */}
          <div 
-            className="absolute top-0 h-full flex items-center will-change-transform transition-transform duration-75 ease-linear"
+            ref={ref}
+            className="absolute top-0 h-full flex items-center will-change-transform"
             style={{ 
-              transform: `translateX(calc(50% - ${xOffset * 20}px))`, // Scale factor for visual speed
-              width: '2000px' 
+              width: '2000px',
+              transform: 'translateX(50%)' // Initial center
             }}
          >
             {/* Repeating Compass Tape */}
@@ -263,7 +272,7 @@ const CompassStrip = ({ degrees }: { degrees: number }) => {
       </div>
     </div>
   );
-};
+});
 
 const HelpOverlay = ({ onDismiss }: { onDismiss: () => void }) => (
   <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-500 p-6">
@@ -317,13 +326,13 @@ const HelpOverlay = ({ onDismiss }: { onDismiss: () => void }) => (
 
 export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const compassStripRef = useRef<HTMLDivElement>(null); // Ref for Direct DOM manip
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showDebug, setShowDebug] = useState(false); // Simulation Mode Toggle
   const [simulatedDistance, setSimulatedDistance] = useState(0);
-  const [compassHeading, setCompassHeading] = useState(0);
 
   // Handle Camera Feed
   useEffect(() => {
@@ -507,8 +516,8 @@ export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
           </div>
         </div>
 
-        {/* Dynamic Compass Strip */}
-        <CompassStrip degrees={compassHeading} />
+        {/* Dynamic Compass Strip (Direct DOM Controlled) */}
+        <CompassStrip ref={compassStripRef} />
 
         {/* Center Reticle (Refined) */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[240px] h-[240px] opacity-40 pointer-events-none">
@@ -585,8 +594,8 @@ export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
         <Canvas camera={{ position: [0, 0, 0], fov: 60 }} gl={{ alpha: true, antialias: true }}>
            <DeviceOrientationControls />
            <OrbitControls enableZoom={false} enablePan={false} rotateSpeed={-0.5} />
-           {/* Syncs 3D rotation with HUD compass */}
-           <CompassController onUpdate={setCompassHeading} />
+           {/* Syncs 3D rotation with HUD compass via Ref */}
+           <CompassController compassRef={compassStripRef} />
            
            <ambientLight intensity={1} />
            <pointLight position={[10, 10, 10]} intensity={1.5} />
