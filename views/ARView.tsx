@@ -1,7 +1,8 @@
+
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, DeviceOrientationControls, OrbitControls } from '@react-three/drei';
-import { X, Navigation, Zap, Radar, MapPin, Scan, Compass, Move, Smartphone, MousePointer2, Info, Target } from 'lucide-react';
+import { X, Navigation, Zap, Radar, MapPin, Scan, Compass, Move, Smartphone, MousePointer2, Info, Target, FlaskConical, CameraOff } from 'lucide-react';
 import * as THREE from 'three';
 import { Place } from '../types';
 import { MOCK_PLACES } from '../constants';
@@ -58,6 +59,7 @@ const ARMarker = ({
   onSelect: (id: string) => void 
 }) => {
   const groupRef = useRef<THREE.Group>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [distance, setDistance] = useState(0);
   const [isFar, setIsFar] = useState(true); // Default to far
   const [isClicked, setIsClicked] = useState(false);
@@ -73,6 +75,15 @@ const ARMarker = ({
       
       // 3. LOD Logic
       setIsFar(dist > 12);
+
+      // 4. Pulsing Effect (Breathing) for Near View
+      if (!isFar) {
+        // Sine wave between 0.98 and 1.02 scale
+        const pulse = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.02;
+        groupRef.current.scale.set(pulse, pulse, pulse);
+      } else {
+        groupRef.current.scale.set(1, 1, 1);
+      }
     }
   });
 
@@ -103,7 +114,7 @@ const ARMarker = ({
           </mesh>
 
           <Html position={[0, 0, 0]} center transform distanceFactor={4} zIndexRange={[100, 0]}>
-            <div className={`flex flex-col items-center group cursor-pointer pointer-events-none origin-center transition-all duration-300 animate-in zoom-in ${isClicked ? 'scale-95' : ''}`}>
+            <div ref={cardRef} className={`flex flex-col items-center group cursor-pointer pointer-events-none origin-center transition-all duration-300 animate-in zoom-in ${isClicked ? 'scale-95' : ''}`}>
               
               {/* Card Container with Scanning Effect */}
               <div 
@@ -187,19 +198,67 @@ const ARMarker = ({
   );
 };
 
-const CompassStrip = () => {
-  // A simple visual CSS compass strip
+// Helper component to sync camera rotation with DOM Compass
+const CompassController = ({ onUpdate }: { onUpdate: (deg: number) => void }) => {
+  const { camera } = useThree();
+  
+  useFrame(() => {
+    // Get camera rotation in Y axis (azimuth)
+    // Note: Real device orientation is complex, this is a simplification for the simulation
+    const vector = new THREE.Vector3(0, 0, -1);
+    vector.applyQuaternion(camera.quaternion);
+    const angle = Math.atan2(vector.x, vector.z);
+    const degrees = THREE.MathUtils.radToDeg(angle);
+    
+    // Normalize to 0-360
+    let normDegrees = degrees;
+    if (normDegrees < 0) normDegrees += 360;
+    
+    onUpdate(normDegrees);
+  });
+  
+  return null;
+};
+
+const CompassStrip = ({ degrees }: { degrees: number }) => {
+  // Create a sliding strip effect
+  // 360 degrees = 100% of the strip width ideally, but here we simulate it
+  // We create a long strip of text and slide it
+  
+  const xOffset = (degrees / 360) * 100; // Percentage offset
+  
   return (
-    <div className="absolute top-16 left-0 right-0 flex justify-center pointer-events-none opacity-60 overflow-hidden">
-      <div className="w-[300px] h-8 relative mask-linear-fade">
-         <div className="absolute inset-0 flex items-center justify-between px-4 text-cyan-400/50 font-mono text-xs font-bold">
-            <span>W</span>
-            <div className="w-px h-2 bg-current"></div>
-            <span className="text-white text-sm shadow-glow">N</span>
-            <div className="w-px h-2 bg-current"></div>
-            <span>E</span>
+    <div className="absolute top-16 left-0 right-0 flex justify-center pointer-events-none opacity-80 overflow-hidden z-30">
+      <div className="w-[300px] h-10 relative mask-linear-fade bg-black/20 backdrop-blur-sm border-b border-white/10">
+         {/* Center Indicator */}
+         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-3 bg-cyan-400 z-10 shadow-[0_0_8px_cyan]"></div>
+         
+         {/* Sliding Container */}
+         <div 
+            className="absolute top-0 h-full flex items-center will-change-transform transition-transform duration-75 ease-linear"
+            style={{ 
+              transform: `translateX(calc(50% - ${xOffset * 20}px))`, // Scale factor for visual speed
+              width: '2000px' 
+            }}
+         >
+            {/* Repeating Compass Tape */}
+            <div className="flex gap-12 text-[10px] font-mono font-bold text-gray-400 select-none">
+              {[...Array(3)].map((_, i) => (
+                 <React.Fragment key={i}>
+                    <span>N</span><span className="text-gray-600">|</span>
+                    <span>NE</span><span className="text-gray-600">|</span>
+                    <span>E</span><span className="text-gray-600">|</span>
+                    <span>SE</span><span className="text-gray-600">|</span>
+                    <span>S</span><span className="text-gray-600">|</span>
+                    <span>SW</span><span className="text-gray-600">|</span>
+                    <span>W</span><span className="text-gray-600">|</span>
+                    <span>NW</span><span className="text-gray-600">|</span>
+                 </React.Fragment>
+              ))}
+            </div>
          </div>
-         {/* Ticks */}
+         
+         {/* Bottom Gradient Line */}
          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
       </div>
     </div>
@@ -234,9 +293,9 @@ const HelpOverlay = ({ onDismiss }: { onDismiss: () => void }) => (
           
           <div className="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
              <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center shrink-0 border border-white/10">
-               <Move size={14} className="text-purple-400" />
+               <FlaskConical size={14} className="text-purple-400" />
              </div>
-             <p className="text-xs text-gray-300">Use slider or walk to approach</p>
+             <p className="text-xs text-gray-300">Enable "Sim Mode" to test distances</p>
           </div>
 
           <div className="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
@@ -259,53 +318,88 @@ const HelpOverlay = ({ onDismiss }: { onDismiss: () => void }) => (
 export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showDebug, setShowDebug] = useState(false); // Simulation Mode Toggle
   const [simulatedDistance, setSimulatedDistance] = useState(0);
+  const [compassHeading, setCompassHeading] = useState(0);
 
   // Handle Camera Feed
   useEffect(() => {
     let stream: MediaStream | null = null;
+    
     const startCamera = async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } 
-        });
-        if (videoRef.current) {
+        // Try environment (rear) camera first
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+              facingMode: 'environment',
+              width: { ideal: 1280 }, 
+              height: { ideal: 720 } 
+            } 
+          });
+        } catch (envError) {
+          console.warn("Environment camera not found, falling back to default", envError);
+          // Fallback to any available video source (e.g. webcam on laptop)
+          stream = await navigator.mediaDevices.getUserMedia({ 
+            video: true 
+          });
+        }
+
+        if (videoRef.current && stream) {
           videoRef.current.srcObject = stream;
-          videoRef.current.onloadedmetadata = () => {
-            videoRef.current?.play();
-            setCameraReady(true);
-          };
+          // Explicitly set attributes for iOS compatibility
+          videoRef.current.setAttribute('playsinline', 'true');
+          videoRef.current.setAttribute('muted', 'true');
+          videoRef.current.setAttribute('autoplay', 'true');
+          
+          // Force play
+          await videoRef.current.play();
+          setCameraReady(true);
         }
       } catch (err) {
-        console.warn("Camera Error:", err);
+        console.error("Camera Fatal Error:", err);
+        setCameraError(true);
+        // Even if camera fails, we allow the app to run (black bg)
         setCameraReady(true); 
       }
     };
-    startCamera();
-    return () => stream?.getTracks().forEach(track => track.stop());
-  }, []);
 
-  // Request Orientation Permissions
+    if (permissionGranted) {
+      startCamera();
+    }
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [permissionGranted]);
+
+  // Request Orientation Permissions & Start Flow
   const requestAccess = async () => {
     try {
-      const DOE = (window as any).DeviceOrientationEvent;
-      if (DOE && typeof DOE.requestPermission === 'function') {
-        const permissionState = await DOE.requestPermission();
+      // Check if DeviceOrientationEvent is defined (mobile)
+      if (typeof (window as any).DeviceOrientationEvent !== 'undefined' && 
+          typeof (window as any).DeviceOrientationEvent.requestPermission === 'function') {
+        const permissionState = await (window as any).DeviceOrientationEvent.requestPermission();
         if (permissionState === 'granted') {
           setPermissionGranted(true);
           setShowHelp(true);
         } else {
-          // Fallback even if denied
+          // Fallback to allow testing even if denied
           setPermissionGranted(true);
           setShowHelp(true);
         }
       } else {
+        // Desktop or non-iOS mobile
         setPermissionGranted(true);
         setShowHelp(true);
       }
     } catch (e) {
+      console.warn("Permission request failed", e);
       setPermissionGranted(true);
       setShowHelp(true);
     }
@@ -352,31 +446,42 @@ export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
   // --- Render: AR View ---
   return (
     <div className="fixed inset-0 z-[100] bg-black overflow-hidden font-sans">
-      {/* Video Background */}
+      {/* Video Background - z-0 ensures it's behind everything */}
       <video 
         ref={videoRef}
-        className="absolute inset-0 w-full h-full object-cover opacity-80"
+        className="absolute inset-0 w-full h-full object-cover z-0"
         playsInline
+        webkit-playsinline="true"
         muted
         autoPlay
       />
       
-      {/* Dark Overlay for better contrast */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none"></div>
+      {/* Fallback if camera error */}
+      {cameraError && (
+        <div className="absolute inset-0 flex items-center justify-center z-0 bg-gray-900">
+          <div className="text-center text-gray-500">
+            <CameraOff size={32} className="mx-auto mb-2 opacity-50" />
+            <p className="text-xs">Camera Unavailable</p>
+          </div>
+        </div>
+      )}
       
-      {/* Help Overlay */}
+      {/* Dark Overlay for better contrast - z-1 */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none z-[1]"></div>
+      
+      {/* Help Overlay - z-50 */}
       {showHelp && <HelpOverlay onDismiss={() => setShowHelp(false)} />}
       
-      {/* HUD Layer */}
+      {/* HUD Layer - z-20 */}
       <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] px-4">
         
         {/* Top Bar */}
         <div className="flex justify-between items-start pointer-events-auto relative z-50">
           <div>
             <div className="flex items-center gap-2 mb-1 bg-black/40 backdrop-blur rounded-full px-2 py-0.5 w-fit border border-white/5">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]"></div>
+              <div className={`w-1.5 h-1.5 rounded-full ${cameraError ? 'bg-red-500' : 'bg-green-500'} animate-pulse shadow-[0_0_8px_#22c55e]`}></div>
               <span className="text-[9px] font-mono text-cyan-400 tracking-widest uppercase">
-                LIVE_FEED
+                {cameraError ? 'CAM_OFFLINE' : 'LIVE_FEED'}
               </span>
             </div>
             <h1 className="text-2xl font-black text-white italic leading-none tracking-tighter drop-shadow-lg">
@@ -385,6 +490,14 @@ export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
           </div>
           
           <div className="flex gap-3">
+             {/* Debug / Simulation Toggle Button */}
+             <button 
+              onClick={() => setShowDebug(!showDebug)} 
+              className={`w-10 h-10 rounded-full border flex items-center justify-center backdrop-blur-md transition-all active:scale-95 ${showDebug ? 'bg-purple-500/20 border-purple-400 text-purple-400' : 'bg-black/30 border-white/10 text-white hover:bg-white/10'}`}
+             >
+               <FlaskConical size={20} />
+             </button>
+
              <button onClick={() => setShowHelp(true)} className="w-10 h-10 rounded-full bg-black/30 border border-white/10 flex items-center justify-center text-white backdrop-blur-md hover:bg-white/10 hover:border-cyan-400/50 transition-all active:scale-95">
                <Info size={20} />
              </button>
@@ -394,7 +507,8 @@ export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
           </div>
         </div>
 
-        <CompassStrip />
+        {/* Dynamic Compass Strip */}
+        <CompassStrip degrees={compassHeading} />
 
         {/* Center Reticle (Refined) */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[240px] h-[240px] opacity-40 pointer-events-none">
@@ -416,36 +530,40 @@ export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
         {/* Bottom Controls */}
         <div className="pointer-events-auto space-y-4">
             
-            {/* Simulator Slider (Styled) */}
-            <div className="bg-black/40 backdrop-blur-xl p-3 rounded-2xl border border-white/5 mx-2">
-              <div className="flex items-center justify-between mb-2 text-cyan-400">
-                <div className="flex items-center gap-2">
-                   <Move size={12} />
-                   <span className="text-[9px] font-bold uppercase tracking-widest">Proximity Simulator</span>
+            {/* Simulator Slider (Styled) - CONDITIONALLY RENDERED */}
+            {showDebug && (
+              <div className="bg-black/40 backdrop-blur-xl p-3 rounded-2xl border border-purple-500/30 mx-2 animate-in slide-in-from-bottom fade-in duration-300">
+                <div className="flex items-center justify-between mb-2 text-purple-400">
+                  <div className="flex items-center gap-2">
+                     <Move size={12} />
+                     <span className="text-[9px] font-bold uppercase tracking-widest">Proximity Simulator</span>
+                  </div>
+                  <span className="text-[9px] font-mono">{simulatedDistance.toFixed(1)}m</span>
                 </div>
-                <span className="text-[9px] font-mono">{simulatedDistance.toFixed(1)}m</span>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="30" 
+                  step="0.1"
+                  value={simulatedDistance} 
+                  onChange={(e) => setSimulatedDistance(parseFloat(e.target.value))}
+                  className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-purple-400 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_10px_purple]"
+                />
               </div>
-              <input 
-                type="range" 
-                min="0" 
-                max="30" 
-                step="0.1"
-                value={simulatedDistance} 
-                onChange={(e) => setSimulatedDistance(parseFloat(e.target.value))}
-                className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-cyan-400 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_10px_cyan]"
-              />
-            </div>
+            )}
 
             {/* Status Bar */}
             <div className="flex items-center justify-between bg-[#0a101d]/80 backdrop-blur-xl rounded-2xl px-1 py-1 border border-white/10 shadow-xl mx-1 mb-2">
               <div className="flex items-center gap-3 px-4 py-2 bg-black/20 rounded-xl border border-white/5">
                 <div className="relative flex items-center justify-center w-2.5 h-2.5">
-                   <div className="absolute w-full h-full bg-green-500 rounded-full opacity-75 animate-ping"></div>
-                   <div className="relative w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+                   <div className={`absolute w-full h-full ${cameraError ? 'bg-red-500' : 'bg-green-500'} rounded-full opacity-75 animate-ping`}></div>
+                   <div className={`relative w-1.5 h-1.5 ${cameraError ? 'bg-red-400' : 'bg-green-400'} rounded-full`}></div>
                 </div>
                 <div>
                    <span className="text-[9px] font-bold text-gray-400 block leading-none mb-0.5">SYSTEM</span>
-                   <span className="text-[10px] font-mono text-white block leading-none tracking-wider">ONLINE</span>
+                   <span className="text-[10px] font-mono text-white block leading-none tracking-wider">
+                     {cameraError ? 'OFFLINE' : 'ONLINE'}
+                   </span>
                 </div>
               </div>
               
@@ -462,11 +580,13 @@ export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
         </div>
       </div>
 
-      {/* 3D Scene */}
+      {/* 3D Scene - z-10 */}
       <div className="absolute inset-0 z-10">
-        <Canvas camera={{ position: [0, 0, 0], fov: 60 }}>
+        <Canvas camera={{ position: [0, 0, 0], fov: 60 }} gl={{ alpha: true, antialias: true }}>
            <DeviceOrientationControls />
            <OrbitControls enableZoom={false} enablePan={false} rotateSpeed={-0.5} />
+           {/* Syncs 3D rotation with HUD compass */}
+           <CompassController onUpdate={setCompassHeading} />
            
            <ambientLight intensity={1} />
            <pointLight position={[10, 10, 10]} intensity={1.5} />
