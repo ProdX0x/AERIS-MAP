@@ -1,18 +1,31 @@
+
 import React, { useState } from 'react';
 import { GlassPanel } from '../components/ui/GlassPanel';
 import { Button } from '../components/ui/Button';
-import { Camera, Image as ImageIcon, Mic, FileText, ChevronDown, ChevronLeft, Loader2 } from 'lucide-react';
+import { Camera, Image as ImageIcon, Mic, FileText, ChevronDown, ChevronLeft, Loader2, Video, Music } from 'lucide-react';
+
+interface CreateEventData {
+  title: string;
+  description: string;
+  category: string;
+  schedule: string;
+  contentType: 'VIDEO' | 'IMAGE' | 'AUDIO' | 'DOCUMENT';
+}
 
 interface CreateViewProps {
-  onPublish: (data: { title: string; description: string; category: string }) => void;
+  onPublish: (data: CreateEventData) => void;
 }
 
 export const CreateView: React.FC<CreateViewProps> = ({ onPublish }) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [formData, setFormData] = useState({
+  
+  // Form State
+  const [formData, setFormData] = useState<CreateEventData>({
     title: 'Summer Music Festival 2024',
     description: 'Join us for a weekend of live music, food, and fun under the stars.',
-    category: 'Music Festival'
+    category: 'Music',
+    schedule: 'Now (Live)',
+    contentType: 'VIDEO' 
   });
 
   const handlePublish = () => {
@@ -27,16 +40,26 @@ export const CreateView: React.FC<CreateViewProps> = ({ onPublish }) => {
     }, 1500);
   };
 
+  const contentTypes = [
+    { id: 'VIDEO', icon: <Camera />, label: 'SHORT VIDEO' },
+    { id: 'IMAGE', icon: <ImageIcon />, label: 'IMAGE' },
+    { id: 'AUDIO', icon: <Mic />, label: 'AUDIO' },
+    { id: 'DOCUMENT', icon: <FileText />, label: 'DOCUMENT' },
+  ] as const;
+
+  const categories = ['Music', 'Sports', 'Art', 'Culture', 'Tech', 'Nature', 'Social'];
+  const schedules = ['Now (Live)', 'Tonight 20:00', 'Tomorrow 10:00', 'This Weekend'];
+
   return (
     <div className="w-full h-full overflow-y-auto pt-12 pb-24 px-4 bg-[#050b14]">
       <div className="flex items-center mb-6">
-        <ChevronLeft className="text-gray-400 mr-2 cursor-pointer" />
+        <ChevronLeft className="text-gray-400 mr-2 cursor-pointer hover:text-white" />
         <h1 className="text-lg font-semibold text-white mx-auto pr-6">PUBLISH NEW EVENT</h1>
       </div>
 
       <div className="flex gap-2 mb-6">
-        <Button variant="outline" size="sm" className="flex-1 text-xs border-cyan-500/50 text-cyan-400">AUTOMATIC LOCATION</Button>
-        <Button variant="outline" size="sm" className="flex-1 text-xs text-gray-500 border-gray-700">MANUAL LOCATION</Button>
+        <Button variant="outline" size="sm" className="flex-1 text-xs border-cyan-500/50 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)]">AUTOMATIC LOCATION</Button>
+        <Button variant="outline" size="sm" className="flex-1 text-xs text-gray-500 border-gray-700 hover:border-gray-500">MANUAL LOCATION</Button>
       </div>
 
       <div className="space-y-6">
@@ -46,28 +69,36 @@ export const CreateView: React.FC<CreateViewProps> = ({ onPublish }) => {
           <label className="text-xs text-gray-400 uppercase font-semibold mb-3 block">Content Upload</label>
           <div className="p-4 rounded-2xl border border-purple-500/30 bg-purple-500/5">
              <div className="flex justify-between px-2">
-                {[
-                  { icon: <Camera />, label: 'SHORT VIDEO' },
-                  { icon: <ImageIcon />, label: 'IMAGE' },
-                  { icon: <Mic />, label: 'AUDIO' },
-                  { icon: <FileText />, label: 'DOCUMENT' },
-                ].map((item, i) => (
-                  <div key={i} className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
-                     <div className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all ${i === 0 ? 'bg-cyan-500/20 border-cyan-400 text-cyan-400' : 'bg-white/5 border-white/10 text-gray-400'}`}>
-                        {item.icon}
-                     </div>
-                     <span className="text-[8px] text-gray-500 font-medium">{item.label}</span>
-                  </div>
-                ))}
+                {contentTypes.map((item) => {
+                  const isActive = formData.contentType === item.id;
+                  return (
+                    <div 
+                      key={item.id} 
+                      onClick={() => setFormData({ ...formData, contentType: item.id })}
+                      className="flex flex-col items-center gap-2 hover:opacity-100 transition-all cursor-pointer group"
+                    >
+                       <div className={`w-12 h-12 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                         isActive 
+                         ? 'bg-cyan-500/20 border-cyan-400 text-cyan-400 shadow-[0_0_10px_cyan] scale-110' 
+                         : 'bg-white/5 border-white/10 text-gray-400 group-hover:bg-white/10'
+                       }`}>
+                          {item.icon}
+                       </div>
+                       <span className={`text-[8px] font-medium transition-colors ${isActive ? 'text-cyan-400' : 'text-gray-500'}`}>
+                         {item.label}
+                       </span>
+                    </div>
+                  );
+                })}
              </div>
-             {/* Progress Bar */}
+             {/* Progress Bar (Simulated Visual) */}
              <div className="mt-4">
                <div className="flex justify-between text-[10px] mb-1">
-                 <span className="text-cyan-400">Uploading...</span>
-                 <span className="text-cyan-400">100%</span>
+                 <span className="text-cyan-400">Ready to upload</span>
+                 <span className="text-cyan-400">0%</span>
                </div>
                <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
-                 <div className="h-full bg-cyan-500 w-full"></div>
+                 <div className="h-full bg-cyan-500 w-[5%]"></div>
                </div>
              </div>
           </div>
@@ -75,6 +106,7 @@ export const CreateView: React.FC<CreateViewProps> = ({ onPublish }) => {
 
         {/* Form Fields */}
         <div className="space-y-4">
+          {/* Title */}
           <div>
             <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Event Title</label>
             <GlassPanel className="flex items-center justify-between !py-2 !px-4 !rounded-xl border border-white/10 focus-within:border-cyan-500/50 transition-colors">
@@ -88,6 +120,7 @@ export const CreateView: React.FC<CreateViewProps> = ({ onPublish }) => {
             </GlassPanel>
           </div>
 
+          {/* Description */}
           <div>
              <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Description</label>
              <GlassPanel className="!p-2 !rounded-xl border border-white/10 focus-within:border-cyan-500/50 transition-colors">
@@ -100,23 +133,35 @@ export const CreateView: React.FC<CreateViewProps> = ({ onPublish }) => {
              </GlassPanel>
           </div>
 
+          {/* Dropdowns */}
           <div className="grid grid-cols-2 gap-4">
-             <div>
+             {/* Schedule Select */}
+             <div className="relative">
                 <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Schedule</label>
-                <GlassPanel className="!py-3 !px-3 !rounded-xl border border-white/10 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-gray-300">
-                    <span>📅</span> Now (Live)
-                  </div>
-                  <ChevronDown size={14} className="text-gray-500" />
+                <GlassPanel className="!py-0 !px-0 !rounded-xl border border-white/10 relative overflow-hidden">
+                   <select 
+                      value={formData.schedule}
+                      onChange={(e) => setFormData({...formData, schedule: e.target.value})}
+                      className="w-full h-full bg-transparent text-xs text-gray-300 py-3 px-3 outline-none appearance-none relative z-10 cursor-pointer"
+                   >
+                      {schedules.map(s => <option key={s} value={s} className="bg-[#0a101d]">{s}</option>)}
+                   </select>
+                   <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 z-0" />
                 </GlassPanel>
              </div>
-             <div>
+             
+             {/* Category Select */}
+             <div className="relative">
                 <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Category</label>
-                <GlassPanel className="!py-3 !px-3 !rounded-xl border border-white/10 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-gray-300">
-                    <span>📍</span> {formData.category}
-                  </div>
-                  <ChevronDown size={14} className="text-gray-500" />
+                <GlassPanel className="!py-0 !px-0 !rounded-xl border border-white/10 relative overflow-hidden">
+                   <select 
+                      value={formData.category}
+                      onChange={(e) => setFormData({...formData, category: e.target.value})}
+                      className="w-full h-full bg-transparent text-xs text-gray-300 py-3 px-3 outline-none appearance-none relative z-10 cursor-pointer"
+                   >
+                      {categories.map(c => <option key={c} value={c} className="bg-[#0a101d]">{c}</option>)}
+                   </select>
+                   <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 z-0" />
                 </GlassPanel>
              </div>
           </div>
@@ -125,27 +170,46 @@ export const CreateView: React.FC<CreateViewProps> = ({ onPublish }) => {
         {/* Preview Area */}
         <div>
           <label className="text-[10px] text-gray-500 uppercase font-bold mb-2 block">Preview</label>
-          <div className="h-32 rounded-2xl border border-white/10 bg-black/30 relative overflow-hidden flex items-center justify-center">
-             <div className="flex items-center gap-8">
+          <div className="h-32 rounded-2xl border border-white/10 bg-black/30 relative overflow-hidden flex items-center justify-center group">
+             {/* Background glow based on content type */}
+             <div className={`absolute inset-0 bg-gradient-to-br opacity-20 transition-colors duration-500 ${
+               formData.contentType === 'VIDEO' ? 'from-cyan-500 to-blue-500' :
+               formData.contentType === 'AUDIO' ? 'from-purple-500 to-pink-500' :
+               'from-green-500 to-teal-500'
+             }`}></div>
+
+             <div className="flex items-center gap-8 relative z-10">
+                {/* Live Indicator */}
+                {formData.schedule.includes('Live') && (
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[8px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+                    LIVE
+                  </div>
+                )}
+
                 {/* Mini Globe Preview */}
-                <div className="w-20 h-20 rounded-full border border-cyan-500/30 bg-blue-900/20 shadow-[0_0_20px_rgba(6,182,212,0.2)] relative">
+                <div className="w-20 h-20 rounded-full border border-cyan-500/30 bg-blue-900/20 shadow-[0_0_20px_rgba(6,182,212,0.2)] relative flex items-center justify-center">
+                   {/* Type Icon */}
+                   {formData.contentType === 'VIDEO' && <Video size={24} className="text-cyan-400 opacity-80" />}
+                   {formData.contentType === 'AUDIO' && <Music size={24} className="text-purple-400 opacity-80" />}
+                   {formData.contentType === 'IMAGE' && <ImageIcon size={24} className="text-green-400 opacity-80" />}
+                   {formData.contentType === 'DOCUMENT' && <FileText size={24} className="text-orange-400 opacity-80" />}
+                   
                    <div className="absolute top-2 right-4 w-2 h-2 bg-cyan-400 rounded-full shadow-[0_0_5px_cyan]"></div>
                 </div>
                 
-                {/* Hexagon Preview */}
+                {/* Hexagon Preview Info */}
                 <div className="relative w-24 h-24 flex items-center justify-center">
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20 clip-path-hexagon"></div>
                     <div className="text-center z-10 max-w-[80px]">
-                       <p className="text-[8px] font-bold text-white mb-1 truncate">{formData.title}</p>
-                       <div className="flex gap-1 justify-center opacity-50">
-                         <div className="w-3 h-3 bg-white/20 rounded-sm"></div>
-                         <div className="w-3 h-3 bg-white/20 rounded-sm"></div>
-                       </div>
+                       <p className="text-[8px] font-bold text-white mb-1 truncate">{formData.title || 'Untitled Event'}</p>
+                       <p className="text-[7px] text-gray-400 truncate">{formData.category}</p>
                     </div>
                 </div>
              </div>
           </div>
-          <p className="text-[10px] text-gray-500 text-center mt-2">How it appears on map & AR</p>
+          <p className="text-[10px] text-gray-500 text-center mt-2">
+            Uploading as <span className="text-cyan-400 font-bold">{formData.contentType}</span>
+          </p>
         </div>
 
         <Button 

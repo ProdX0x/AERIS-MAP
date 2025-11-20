@@ -1,6 +1,7 @@
+
 import React, { useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Sphere, Points, PointMaterial, Stars } from '@react-three/drei';
+import { OrbitControls, Sphere, Points, PointMaterial, Stars, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { Place } from '../../types';
 
@@ -15,6 +16,7 @@ declare global {
       meshPhongMaterial: any;
       pointLight: any;
       sphereGeometry: any;
+      cylinderGeometry: any;
     }
   }
 }
@@ -30,6 +32,7 @@ declare module 'react' {
       meshPhongMaterial: any;
       pointLight: any;
       sphereGeometry: any;
+      cylinderGeometry: any;
     }
   }
 }
@@ -46,7 +49,9 @@ const calcPosFromLatLonRad = (lat: number, lon: number, radius: number) => {
 
 interface GlobeProps {
   places: Place[];
+  selectedPlaceId?: string | null;
   onSelectPlace: (id: string) => void;
+  onSelectCluster: (places: Place[]) => void;
 }
 
 const GlowingSphere = () => {
@@ -77,34 +82,143 @@ const GlowingSphere = () => {
   );
 };
 
-const PlaceMarker: React.FC<{ position: [number, number, number]; onClick: () => void }> = ({ position, onClick }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
+// --- CLUSTER MARKER ---
+const ClusterMarker: React.FC<{ position: [number, number, number]; count: number; onClick: () => void }> = ({ position, count, onClick }) => {
+  return (
+    <group position={position} onClick={(e) => { e.stopPropagation(); onClick(); }}>
+      <mesh>
+        <sphereGeometry args={[0.08, 16, 16]} />
+        <meshBasicMaterial color="#a855f7" toneMapped={false} />
+      </mesh>
+      <mesh>
+        <sphereGeometry args={[0.12, 16, 16]} />
+        <meshBasicMaterial color="#a855f7" transparent opacity={0.3} />
+      </mesh>
+      <Html center>
+        <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center border border-white/20 shadow-[0_0_10px_purple] cursor-pointer hover:scale-110 transition-transform">
+          <span className="text-[10px] font-bold text-white">{count}</span>
+        </div>
+      </Html>
+    </group>
+  );
+};
+
+// --- SINGLE PLACE MARKER (PIN) ---
+const PlaceMarker: React.FC<{ 
+  position: [number, number, number]; 
+  selected: boolean;
+  onClick: () => void;
+}> = ({ position, selected, onClick }) => {
+  const meshRef = useRef<THREE.Group>(null);
   const [hovered, setHover] = useState(false);
 
   useFrame((state) => {
     if (meshRef.current) {
-      const scale = hovered ? 1.5 : 1.0;
-      // Pulsing effect
-      const pulse = 1 + Math.sin(state.clock.elapsedTime * 3) * 0.1;
+      // Look at camera so the pin always faces user
+      meshRef.current.lookAt(state.camera.position);
+      
+      const scale = selected || hovered ? 1.5 : 1.0;
+      // Pulsing effect if selected
+      const pulse = selected ? 1 + Math.sin(state.clock.elapsedTime * 5) * 0.1 : 1;
       meshRef.current.scale.set(scale * pulse, scale * pulse, scale * pulse);
     }
   });
 
   return (
-    <mesh 
-      position={position} 
+    <group 
       ref={meshRef} 
+      position={position} 
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       onPointerOver={() => setHover(true)}
       onPointerOut={() => setHover(false)}
+      cursor="pointer"
     >
-      <sphereGeometry args={[0.05, 16, 16]} />
-      <meshBasicMaterial color={hovered ? "#ff00ff" : "#00ffff"} toneMapped={false} />
-    </mesh>
+      {/* Pin Stem */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.08]}>
+        <cylinderGeometry args={[0.005, 0.005, 0.16, 8]} />
+        <meshBasicMaterial color={selected ? "#ff00ff" : "#06b6d4"} />
+      </mesh>
+      
+      {/* Pin Head */}
+      <mesh position={[0, 0, 0.16]}>
+        <sphereGeometry args={[0.03, 16, 16]} />
+        <meshBasicMaterial color={selected ? "#ff00ff" : "#06b6d4"} toneMapped={false} />
+      </mesh>
+      
+      {/* Selection Halo */}
+      {selected && (
+        <mesh position={[0, 0, 0.16]}>
+          <sphereGeometry args={[0.05, 16, 16]} />
+          <meshBasicMaterial color="#ff00ff" transparent opacity={0.3} />
+        </mesh>
+      )}
+    </group>
   );
 };
 
-const Scene: React.FC<GlobeProps> = ({ places, onSelectPlace }) => {
+interface ClusterData {
+  type: 'cluster';
+  position: [number, number, number];
+  places: Place[];
+  id: string;
+}
+
+interface SingleData {
+  type: 'single';
+  position: [number, number, number];
+  place: Place;
+  id: string;
+}
+
+type MarkerData = ClusterData | SingleData;
+
+const Scene: React.FC<GlobeProps> = ({ places, selectedPlaceId, onSelectPlace, onSelectCluster }) => {
+  
+  // --- CLUSTERING ALGORITHM ---
+  const markers = useMemo(() => {
+    const result: MarkerData[] = [];
+    const processed = new Set<string>();
+    const CLUSTER_THRESHOLD = 0.15; // Distance threshold in 3D units
+
+    places.forEach(place => {
+      if (processed.has(place.id)) return;
+
+      const p1Pos = calcPosFromLatLonRad(place.coordinates.lat, place.coordinates.lng, 2.05);
+      const clusterGroup: Place[] = [place];
+      processed.add(place.id);
+
+      // Check all other places
+      places.forEach(other => {
+        if (place.id === other.id || processed.has(other.id)) return;
+        
+        const p2Pos = calcPosFromLatLonRad(other.coordinates.lat, other.coordinates.lng, 2.05);
+        const dist = new THREE.Vector3(...p1Pos).distanceTo(new THREE.Vector3(...p2Pos));
+        
+        if (dist < CLUSTER_THRESHOLD) {
+           clusterGroup.push(other);
+           processed.add(other.id);
+        }
+      });
+
+      if (clusterGroup.length > 1) {
+        result.push({
+          type: 'cluster',
+          id: `cluster-${place.id}`,
+          position: p1Pos, // Use the first place's position for the cluster center
+          places: clusterGroup
+        });
+      } else {
+        result.push({
+          type: 'single',
+          id: place.id,
+          position: p1Pos,
+          place: place
+        });
+      }
+    });
+    return result;
+  }, [places]);
+
   return (
     <>
       <ambientLight intensity={0.5} />
@@ -115,15 +229,28 @@ const Scene: React.FC<GlobeProps> = ({ places, onSelectPlace }) => {
       
       <GlowingSphere />
       
-      {places.map((place) => {
-        const pos = calcPosFromLatLonRad(place.coordinates.lat, place.coordinates.lng, 2.05);
-        return (
-          <PlaceMarker 
-            key={place.id} 
-            position={pos} 
-            onClick={() => onSelectPlace(place.id)}
-          />
-        );
+      {markers.map((marker) => {
+        if (marker.type === 'cluster') {
+           return (
+             <ClusterMarker
+               key={marker.id}
+               position={marker.position}
+               count={marker.places.length}
+               onClick={() => {
+                 onSelectCluster(marker.places);
+               }}
+             />
+           );
+        } else {
+           return (
+             <PlaceMarker 
+               key={marker.id} 
+               position={marker.position} 
+               selected={selectedPlaceId === marker.place.id}
+               onClick={() => onSelectPlace(marker.place.id)}
+             />
+           );
+        }
       })}
 
       <OrbitControls 

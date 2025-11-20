@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAppViewModel } from './viewmodels/useAppViewModel';
 import { NavTab } from './types';
@@ -6,6 +7,7 @@ import { EventsView } from './views/EventsView';
 import { CreateView } from './views/CreateView';
 import { PlaceDetailView } from './views/PlaceDetailView';
 import { ARView } from './views/ARView';
+import { ClusterListView } from './views/ClusterListView';
 import { BottomBar } from './components/Navigation/BottomBar';
 import { TopBar } from './components/Navigation/TopBar';
 import { User } from 'lucide-react';
@@ -19,7 +21,9 @@ const App: React.FC = () => {
         return (
           <MapView 
             places={vm.places} 
+            selectedPlaceId={vm.selectedPlace?.id}
             onSelectPlace={vm.selectPlace} 
+            onSelectCluster={vm.selectCluster}
             onToggleAR={vm.toggleArMode}
           />
         );
@@ -60,6 +64,15 @@ const App: React.FC = () => {
       <div className="absolute inset-0 pb-[85px]">
         {renderContent()}
       </div>
+
+      {/* Cluster List Overlay (When clicking a number badge) */}
+      {vm.selectedCluster && (
+        <ClusterListView 
+          places={vm.selectedCluster}
+          onSelectPlace={vm.selectPlace}
+          onClose={() => vm.selectCluster(null)}
+        />
+      )}
 
       {/* Place Detail Overlay (Modal) */}
       {vm.selectedPlace && (

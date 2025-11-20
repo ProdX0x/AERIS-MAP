@@ -61,6 +61,19 @@ export const MOCK_PLACES: Place[] = [
     rating: 4.7,
     tags: ['Landmark', 'Light', 'History']
   },
+  // DUPLICATE PLACE NEAR PARIS FOR CLUSTERING TEST
+  {
+    id: 'p4_dup',
+    name: 'Paris Cyber Café',
+    address: 'Near Eiffel Tower, Paris',
+    description: 'A cozy underground spot for netrunners and data brokers.',
+    category: 'Entertainment',
+    coordinates: { lat: 48.8600, lng: 2.3500 }, // Very close to p4
+    distance: '8,900 km away',
+    imageUrl: 'https://picsum.photos/id/405/600/400',
+    rating: 4.3,
+    tags: ['Cafe', 'Cyber', 'Hangout']
+  },
   {
     id: 'p5',
     name: 'Red Square Citadel',

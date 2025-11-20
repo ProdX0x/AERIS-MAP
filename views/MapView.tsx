@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HolographicGlobe } from '../components/3d/HolographicGlobe';
 import { Place } from '../types';
@@ -7,15 +8,22 @@ import { GlassPanel } from '../components/ui/GlassPanel';
 
 interface MapViewProps {
   places: Place[];
+  selectedPlaceId?: string | null;
   onSelectPlace: (id: string) => void;
+  onSelectCluster: (places: Place[]) => void;
   onToggleAR: () => void;
 }
 
-export const MapView: React.FC<MapViewProps> = ({ places, onSelectPlace, onToggleAR }) => {
+export const MapView: React.FC<MapViewProps> = ({ places, selectedPlaceId, onSelectPlace, onSelectCluster, onToggleAR }) => {
   return (
     <div className="relative w-full h-full">
       {/* 3D Background */}
-      <HolographicGlobe places={places} onSelectPlace={onSelectPlace} />
+      <HolographicGlobe 
+        places={places} 
+        selectedPlaceId={selectedPlaceId} 
+        onSelectPlace={onSelectPlace} 
+        onSelectCluster={onSelectCluster}
+      />
 
       {/* Top Overlay - Search */}
       <div className="absolute top-0 left-0 right-0 p-4 pt-12 z-10">
