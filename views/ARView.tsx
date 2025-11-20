@@ -112,8 +112,10 @@ const ARMarker = ({
             <meshBasicMaterial color="#06b6d4" transparent opacity={0.2} side={THREE.DoubleSide} />
           </mesh>
 
-          <Html position={[0, 0, 0]} center transform distanceFactor={4} zIndexRange={[100, 0]}>
-            <div ref={cardRef} className={`flex flex-col items-center group cursor-pointer pointer-events-none origin-center transition-all duration-300 animate-in zoom-in ${isClicked ? 'scale-95' : ''}`}>
+          {/* FIX: Changed distanceFactor from 4 to 12 for better mobile scaling */}
+          <Html position={[0, 0, 0]} center transform distanceFactor={12} zIndexRange={[100, 0]}>
+            {/* FIX: Added scale-90 for mobile safety margin */}
+            <div ref={cardRef} className={`flex flex-col items-center group cursor-pointer pointer-events-none origin-center transition-all duration-300 animate-in zoom-in scale-90 sm:scale-100 ${isClicked ? 'scale-95' : ''}`}>
               
               {/* CSS Animation Styles Injection */}
               <style>{`
