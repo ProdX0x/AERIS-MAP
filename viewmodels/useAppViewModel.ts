@@ -12,6 +12,7 @@ export const useAppViewModel = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [arMode, setArMode] = useState(false);
   const [networkFilter, setNetworkFilter] = useState<NetworkFilterType>('ALL');
+  const [isNetworkPanelOpen, setIsNetworkPanelOpen] = useState(false);
 
   // State for Dynamic Data (initialized with Mocks)
   const [places, setPlaces] = useState<Place[]>(MOCK_PLACES);
@@ -49,6 +50,10 @@ export const useAppViewModel = () => {
 
   const toggleNetworkFilter = useCallback((filter: NetworkFilterType) => {
     setNetworkFilter(filter);
+  }, []);
+
+  const toggleNetworkPanel = useCallback(() => {
+    setIsNetworkPanelOpen(prev => !prev);
   }, []);
 
   const filterEvents = useCallback((query: string) => {
@@ -131,6 +136,8 @@ export const useAppViewModel = () => {
     toggleArMode,
     networkFilter,
     toggleNetworkFilter,
+    isNetworkPanelOpen,
+    toggleNetworkPanel,
     publishEvent
   };
 };

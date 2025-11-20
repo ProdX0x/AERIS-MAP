@@ -15,6 +15,7 @@ interface MapViewProps {
   onToggleAR: () => void;
   networkFilter: NetworkFilterType;
   onToggleNetworkFilter: (filter: NetworkFilterType) => void;
+  isNetworkPanelOpen: boolean;
 }
 
 export const MapView: React.FC<MapViewProps> = ({ 
@@ -24,7 +25,8 @@ export const MapView: React.FC<MapViewProps> = ({
   onSelectCluster, 
   onToggleAR,
   networkFilter,
-  onToggleNetworkFilter
+  onToggleNetworkFilter,
+  isNetworkPanelOpen
 }) => {
   
   const filters: { id: NetworkFilterType; label: string; color: string }[] = [
@@ -48,7 +50,7 @@ export const MapView: React.FC<MapViewProps> = ({
       />
 
       {/* Top Overlay - Search */}
-      <div className="absolute top-0 left-0 right-0 p-4 pt-12 z-10">
+      <div className="absolute top-0 left-0 right-0 p-4 pt-16 z-10">
         <GlassPanel className="flex items-center gap-3 p-3 !rounded-full mx-2">
           <Search className="w-5 h-5 text-gray-400" />
           <input 
@@ -75,32 +77,34 @@ export const MapView: React.FC<MapViewProps> = ({
         </div>
       </div>
 
-      {/* Network Filter UI (Bottom Right) */}
-      <div className="absolute bottom-24 right-4 z-10 flex flex-col gap-2">
-        <div className="bg-black/50 backdrop-blur-xl border border-white/10 p-2 rounded-2xl">
-          <div className="flex items-center gap-1 mb-2 px-1">
-             <Network size={12} className="text-gray-400" />
-             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Data Streams</span>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {filters.map(f => {
-               const isActive = networkFilter === f.id;
-               return (
-                 <button 
-                   key={f.id}
-                   onClick={() => onToggleNetworkFilter(f.id)}
-                   className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-[9px] font-bold transition-all ${
-                     isActive ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'
-                   }`}
-                 >
-                    <div className={`w-1.5 h-1.5 rounded-full ${f.color} ${isActive ? 'shadow-[0_0_8px_currentColor]' : 'opacity-50'}`}></div>
-                    <span>{f.label}</span>
-                 </button>
-               );
-            })}
+      {/* Network Filter UI (Bottom Right) - CONTROLLABLE VISIBILITY */}
+      {isNetworkPanelOpen && (
+        <div className="absolute bottom-24 right-4 z-10 flex flex-col gap-2 animate-in slide-in-from-right duration-300">
+          <div className="bg-black/50 backdrop-blur-xl border border-white/10 p-2 rounded-2xl">
+            <div className="flex items-center gap-1 mb-2 px-1">
+              <Network size={12} className="text-gray-400" />
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Data Streams</span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {filters.map(f => {
+                const isActive = networkFilter === f.id;
+                return (
+                  <button 
+                    key={f.id}
+                    onClick={() => onToggleNetworkFilter(f.id)}
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-[9px] font-bold transition-all ${
+                      isActive ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'
+                    }`}
+                  >
+                      <div className={`w-1.5 h-1.5 rounded-full ${f.color} ${isActive ? 'shadow-[0_0_8px_currentColor]' : 'opacity-50'}`}></div>
+                      <span>{f.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* AR Toggle (Bottom Center) */}
       <div className="absolute bottom-24 left-0 right-0 flex justify-center z-10 pointer-events-none">

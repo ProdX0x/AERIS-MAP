@@ -27,6 +27,7 @@ const App: React.FC = () => {
             onToggleAR={vm.toggleArMode}
             networkFilter={vm.networkFilter}
             onToggleNetworkFilter={vm.toggleNetworkFilter}
+            isNetworkPanelOpen={vm.isNetworkPanelOpen}
           />
         );
       case NavTab.EVENTS:
@@ -57,10 +58,10 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-screen bg-[#050b14] overflow-hidden">
+    <div className="relative w-full h-[100dvh] bg-[#050b14] overflow-hidden">
       
-      {/* Show TopBar only on Map View for cleaner look, or globally */}
-      <TopBar />
+      {/* Show TopBar globally */}
+      <TopBar onToggleNetworkPanel={vm.toggleNetworkPanel} />
 
       {/* Main Content Area */}
       <div className="absolute inset-0 pb-[85px]">
