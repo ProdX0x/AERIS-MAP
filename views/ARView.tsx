@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, DeviceOrientationControls, OrbitControls } from '@react-three/drei';
-import { X, Navigation, Zap, Radar, MapPin, Scan, Compass, Move, Smartphone, MousePointer2, Info, Target, FlaskConical, CameraOff } from 'lucide-react';
+import { X, Navigation, Zap, Radar, MapPin, Scan, Compass, Move, Smartphone, MousePointer2, Info, Target, FlaskConical, CameraOff, Focus, Grid3x3, Camera, Check } from 'lucide-react';
 import * as THREE from 'three';
 import { Place } from '../types';
 import { MOCK_PLACES } from '../constants';
@@ -21,6 +21,7 @@ declare global {
       ringGeometry: any;
       sphereGeometry: any;
       coneGeometry: any;
+      gridHelper: any;
     }
   }
 }
@@ -38,6 +39,7 @@ declare module 'react' {
       ringGeometry: any;
       sphereGeometry: any;
       coneGeometry: any;
+      gridHelper: any;
     }
   }
 }
@@ -335,6 +337,32 @@ export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
   const [showHelp, setShowHelp] = useState(false);
   const [showDebug, setShowDebug] = useState(false); // Simulation Mode Toggle
   const [simulatedDistance, setSimulatedDistance] = useState(0);
+  
+  // New Control States
+  const [showGrid, setShowGrid] = useState(false);
+  const [flash, setFlash] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
+
+  // Helper to show toast notifications
+  const showNotification = (msg: string) => {
+    setNotification(msg);
+    setTimeout(() => setNotification(null), 2000);
+  };
+
+  const handleRecenter = () => {
+    showNotification("SENSORS RECALIBRATED");
+  };
+
+  const handleCapture = () => {
+    setFlash(true);
+    showNotification("SNAPSHOT SAVED TO DATABASE");
+    setTimeout(() => setFlash(false), 150);
+  };
+
+  const handleToggleGrid = () => {
+    setShowGrid(!showGrid);
+    showNotification(!showGrid ? "TERRAIN GRID: ENABLED" : "TERRAIN GRID: DISABLED");
+  };
 
   // Handle Camera Feed
   useEffect(() => {
@@ -457,6 +485,11 @@ export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
   // --- Render: AR View ---
   return (
     <div className="fixed inset-0 z-[100] bg-black overflow-hidden font-sans">
+      {/* Flash Overlay */}
+      {flash && (
+        <div className="absolute inset-0 bg-white z-[60] animate-[fadeOut_0.2s_ease-out_forwards] pointer-events-none"></div>
+      )}
+
       {/* Video Background - z-0 ensures it's behind everything */}
       <video 
         ref={videoRef}
@@ -483,6 +516,14 @@ export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
       {/* Help Overlay - z-50 */}
       {showHelp && <HelpOverlay onDismiss={() => setShowHelp(false)} />}
       
+      {/* Toast Notification - z-50 */}
+      {notification && (
+        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-50 bg-black/70 backdrop-blur-md border border-cyan-500/30 px-4 py-2 rounded-full flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <Check size={14} className="text-green-400" />
+          <span className="text-xs font-bold text-white tracking-wide">{notification}</span>
+        </div>
+      )}
+
       {/* HUD Layer - z-20 */}
       <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] px-4">
         
@@ -516,6 +557,19 @@ export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
                <X size={20} />
              </button>
           </div>
+        </div>
+
+        {/* Right Side Toolbar */}
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 pointer-events-auto z-50">
+          <button onClick={handleRecenter} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-cyan-500/20 hover:text-cyan-400 hover:border-cyan-500/50 transition-all active:scale-90 group">
+             <Focus size={20} className="group-hover:rotate-90 transition-transform" />
+          </button>
+          <button onClick={handleToggleGrid} className={`w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border flex items-center justify-center transition-all active:scale-90 ${showGrid ? 'border-cyan-500 text-cyan-400 bg-cyan-900/20' : 'border-white/10 text-white hover:bg-white/10'}`}>
+             <Grid3x3 size={20} />
+          </button>
+          <button onClick={handleCapture} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-white/10 hover:border-white/30 transition-all active:scale-90">
+             <Camera size={20} />
+          </button>
         </div>
 
         {/* Dynamic Compass Strip (Direct DOM Controlled) */}
@@ -601,6 +655,9 @@ export const ARView: React.FC<ARViewProps> = ({ onExit, onSelectPlace }) => {
            
            <ambientLight intensity={1} />
            <pointLight position={[10, 10, 10]} intensity={1.5} />
+
+           {/* Toggleable Grid Helper */}
+           {showGrid && <gridHelper args={[50, 50, 0x06b6d4, 0x333333]} position={[0, -4, 0]} />}
            
            {arPlaces.map((place) => (
              <ARMarker 
