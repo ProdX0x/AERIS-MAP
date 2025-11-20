@@ -96,26 +96,31 @@ const ARMarker: React.FC<ARMarkerProps> = ({
                 }
               `}</style>
 
-              {/* Card Container with Scanning Effect & Breathing Animation */}
-              <div 
+              {/* Card Container - Enhanced Soap Bubble Style */}
+              <div
                 onClick={handleSelect}
                 className={`
-                  animate-breathe
-                  pointer-events-auto relative bg-black/80 backdrop-blur-xl 
-                  border p-3 rounded-xl shadow-[0_0_30px_rgba(6,182,212,0.2)] 
-                  w-[160px] sm:w-[240px] transition-all duration-200 
+                  animate-breathe soap-bubble
+                  pointer-events-auto relative p-3 transition-all duration-200
+                  w-[180px] sm:w-[260px]
                   overflow-hidden
-                  ${isClicked ? 'border-white bg-cyan-900/60' : 'border-cyan-500/50 hover:border-cyan-300 hover:bg-black/90'}
+                  ${isClicked ? 'scale-95' : ''}
                 `}
+                style={{
+                  borderRadius: '20% 25% 22% 28% / 25% 23% 27% 25%',
+                  boxShadow: isClicked
+                    ? '0 0 40px rgba(255, 255, 255, 0.6), inset 0 0 20px rgba(6, 182, 212, 0.3)'
+                    : '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 20px rgba(6, 182, 212, 0.3)'
+                }}
               >
                  {/* Scanning Line Animation */}
                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-cyan-400/10 to-transparent h-[50%] w-full animate-[scan_3s_linear_infinite] -translate-y-full"></div>
 
-                 {/* Decorative Corners */}
-                 <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-cyan-400 rounded-tl-md"></div>
-                 <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-cyan-400 rounded-tr-md"></div>
-                 <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-cyan-400 rounded-bl-md"></div>
-                 <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-cyan-400 rounded-br-md"></div>
+                 {/* Iridescent Shimmer Effect */}
+                 <div className="absolute inset-0 opacity-40 pointer-events-none" style={{
+                   background: 'linear-gradient(135deg, transparent 0%, rgba(6, 182, 212, 0.2) 25%, rgba(168, 85, 247, 0.2) 50%, rgba(236, 72, 153, 0.2) 75%, transparent 100%)',
+                   animation: 'gradient-shift 4s ease infinite'
+                 }}></div>
                  
                  <div className="flex items-start gap-2 mb-2 relative z-10">
                    <div className="shrink-0 w-7 h-7 rounded bg-cyan-950 border border-cyan-500/30 flex items-center justify-center">
@@ -130,7 +135,12 @@ const ARMarker: React.FC<ARMarkerProps> = ({
                    </div>
                  </div>
                  
-                 <button className="relative z-10 w-full py-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded text-[9px] font-bold text-cyan-300 transition-all uppercase flex items-center justify-center gap-1.5 group-hover:bg-cyan-500/30 group-hover:text-white">
+                 <button className="relative z-10 w-full py-2 border rounded-full text-[9px] font-bold transition-all uppercase flex items-center justify-center gap-1.5 active:scale-95" style={{
+                   background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
+                   borderColor: 'rgba(6, 182, 212, 0.4)',
+                   color: '#06b6d4',
+                   boxShadow: '0 0 10px rgba(6, 182, 212, 0.2)'
+                 }}>
                    <span>Initialize Link</span>
                    <Navigation size={10} />
                  </button>

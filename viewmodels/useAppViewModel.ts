@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { NavTab, Place, Event } from '../types';
 import { MOCK_PLACES, MOCK_EVENTS } from '../constants';
+import { haptics } from '../utils/haptics';
 
 export type NetworkFilterType = 'ALL' | 'CYBER' | 'NATURE' | 'CULTURE' | 'ENTERTAINMENT' | 'OFF';
 
@@ -21,6 +22,7 @@ export const useAppViewModel = () => {
   const selectedPlace = places.find(p => p.id === selectedPlaceId) || null;
 
   const handleTabChange = useCallback((tab: NavTab) => {
+    haptics.selection();
     setCurrentTab(tab);
     if (tab !== NavTab.MAP) {
       setSelectedPlaceId(null);
@@ -29,9 +31,11 @@ export const useAppViewModel = () => {
   }, []);
 
   const selectPlace = useCallback((id: string | null) => {
+    if (id) {
+      haptics.light();
+    }
     setSelectedPlaceId(id);
     if (id) {
-      // If a specific place is selected, close the cluster list
       setSelectedCluster(null);
     }
   }, []);
@@ -45,6 +49,7 @@ export const useAppViewModel = () => {
   }, []);
 
   const toggleArMode = useCallback(() => {
+    haptics.medium();
     setArMode(prev => !prev);
   }, []);
 
