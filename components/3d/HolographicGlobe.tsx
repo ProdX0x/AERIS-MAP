@@ -84,18 +84,48 @@ const GlowingSphere = () => {
 
 // --- CLUSTER MARKER ---
 const ClusterMarker: React.FC<{ position: [number, number, number]; count: number; onClick: () => void }> = ({ position, count, onClick }) => {
+  const groupRef = useRef<THREE.Group>(null);
+  const [hovered, setHover] = useState(false);
+
+  useFrame((state) => {
+    if (groupRef.current) {
+      // Look at camera
+      groupRef.current.lookAt(state.camera.position);
+      
+      // Pulse animation on hover
+      const scale = hovered ? 1.3 : 1.0;
+      const pulse = hovered ? 1 + Math.sin(state.clock.elapsedTime * 10) * 0.1 : 1;
+      
+      groupRef.current.scale.set(scale * pulse, scale * pulse, scale * pulse);
+    }
+  });
+
   return (
-    <group position={position} onClick={(e) => { e.stopPropagation(); onClick(); }}>
-      <mesh>
+    <group 
+      ref={groupRef} 
+      position={position}
+      onPointerOver={(e) => { e.stopPropagation(); setHover(true); }}
+      onPointerOut={(e) => setHover(false)}
+    >
+      <mesh onClick={(e) => { e.stopPropagation(); onClick(); }}>
         <sphereGeometry args={[0.08, 16, 16]} />
         <meshBasicMaterial color="#a855f7" toneMapped={false} />
       </mesh>
-      <mesh>
+      <mesh onClick={(e) => { e.stopPropagation(); onClick(); }}>
         <sphereGeometry args={[0.12, 16, 16]} />
         <meshBasicMaterial color="#a855f7" transparent opacity={0.3} />
       </mesh>
       <Html center>
-        <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center border border-white/20 shadow-[0_0_10px_purple] cursor-pointer hover:scale-110 transition-transform">
+        <div 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onClick();
+          }}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center border border-white/20 shadow-[0_0_10px_purple] cursor-pointer pointer-events-auto"
+        >
           <span className="text-[10px] font-bold text-white">{count}</span>
         </div>
       </Html>
