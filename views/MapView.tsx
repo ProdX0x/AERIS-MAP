@@ -32,7 +32,8 @@ export const MapView: React.FC<MapViewProps> = ({
     { id: 'CYBER', label: 'CYBER', color: 'bg-cyan-400' },
     { id: 'NATURE', label: 'NATURE', color: 'bg-green-400' },
     { id: 'CULTURE', label: 'CULTURE', color: 'bg-purple-400' },
-    { id: 'ENTERTAINMENT', label: 'FUN', color: 'bg-pink-400' }
+    { id: 'ENTERTAINMENT', label: 'FUN', color: 'bg-pink-400' },
+    { id: 'OFF', label: 'OFF', color: 'bg-gray-600' }
   ];
 
   return (

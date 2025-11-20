@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import { NavTab, Place, Event } from '../types';
 import { MOCK_PLACES, MOCK_EVENTS } from '../constants';
 
-export type NetworkFilterType = 'ALL' | 'CYBER' | 'NATURE' | 'CULTURE' | 'ENTERTAINMENT';
+export type NetworkFilterType = 'ALL' | 'CYBER' | 'NATURE' | 'CULTURE' | 'ENTERTAINMENT' | 'OFF';
 
 export const useAppViewModel = () => {
   const [currentTab, setCurrentTab] = useState<NavTab>(NavTab.MAP);

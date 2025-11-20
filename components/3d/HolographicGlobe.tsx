@@ -55,6 +55,9 @@ const GlowingSphere = () => {
 // --- DYNAMIC DATA ARCS COMPONENT ---
 const DataArcs: React.FC<{ places: Place[], filter: NetworkFilterType }> = ({ places, filter }) => {
   const connections = useMemo(() => {
+    // If filter is OFF, return no lines
+    if (filter === 'OFF') return [];
+
     const lines: { start: THREE.Vector3, end: THREE.Vector3, color: string, speed: number }[] = [];
     
     // Group places by category
