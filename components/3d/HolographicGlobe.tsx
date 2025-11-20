@@ -30,22 +30,31 @@ const GlowingSphere = () => {
        {/* Inner Dark Sphere */}
       <Sphere args={[2, 64, 64]}>
         <meshPhongMaterial
-          color="#030712"
-          emissive="#0e1b33"
-          emissiveIntensity={0.2}
-          shininess={20}
+          color="#0a1628"
+          emissive="#1e3a5f"
+          emissiveIntensity={0.4}
+          shininess={30}
           transparent={true}
-          opacity={0.95}
+          opacity={0.9}
           wireframe={false}
         />
       </Sphere>
-      {/* Wireframe overlay */}
+      {/* Wireframe overlay - Enhanced */}
       <Sphere args={[2.01, 32, 32]}>
         <meshBasicMaterial
           color="#06b6d4"
           wireframe
           transparent
-          opacity={0.05}
+          opacity={0.15}
+        />
+      </Sphere>
+      {/* Additional glow layer */}
+      <Sphere args={[2.02, 24, 24]}>
+        <meshBasicMaterial
+          color="#22d3ee"
+          wireframe
+          transparent
+          opacity={0.08}
         />
       </Sphere>
     </group>
@@ -339,9 +348,10 @@ const Scene: React.FC<GlobeProps> = ({ places, selectedPlaceId, onSelectPlace, o
 
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} intensity={1.5} color="#4f46e5" />
-      <pointLight position={[-10, -10, -10]} intensity={0.5} color="#06b6d4" />
+      <ambientLight intensity={0.8} />
+      <pointLight position={[10, 10, 10]} intensity={2.0} color="#06b6d4" />
+      <pointLight position={[-10, -10, -10]} intensity={1.2} color="#a855f7" />
+      <pointLight position={[0, 10, 0]} intensity={1.0} color="#22d3ee" />
       
       <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
       
@@ -388,11 +398,18 @@ const Scene: React.FC<GlobeProps> = ({ places, selectedPlaceId, onSelectPlace, o
 
 export const HolographicGlobe: React.FC<GlobeProps> = (props) => {
   return (
-    <div className="w-full h-full absolute top-0 left-0 z-0 bg-gradient-to-b from-[#020617] to-[#0f172a]">
+    <div className="w-full h-full absolute top-0 left-0 z-0" style={{
+      background: 'radial-gradient(circle at 50% 50%, #0f1629 0%, #050b14 50%, #020408 100%)'
+    }}>
+      {/* Animated background particles */}
+      <div className="absolute inset-0 opacity-30" style={{
+        backgroundImage: 'radial-gradient(circle at 20% 30%, rgba(6, 182, 212, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.1) 0%, transparent 50%)'
+      }}></div>
+
       <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
         <Scene {...props} />
       </Canvas>
-      
+
       {/* Decorative grid overlay for "Cyber" feel */}
       <div className="absolute inset-0 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
     </div>
