@@ -5,38 +5,6 @@ import { OrbitControls, Sphere, Points, PointMaterial, Stars, Html } from '@reac
 import * as THREE from 'three';
 import { Place } from '../../types';
 
-// Augment JSX namespace to support React Three Fiber intrinsic elements
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      ambientLight: any;
-      group: any;
-      mesh: any;
-      meshBasicMaterial: any;
-      meshPhongMaterial: any;
-      pointLight: any;
-      sphereGeometry: any;
-      cylinderGeometry: any;
-    }
-  }
-}
-
-// Augment React's JSX namespace specifically for React 18+ type definitions
-declare module 'react' {
-  namespace JSX {
-    interface IntrinsicElements {
-      ambientLight: any;
-      group: any;
-      mesh: any;
-      meshBasicMaterial: any;
-      meshPhongMaterial: any;
-      pointLight: any;
-      sphereGeometry: any;
-      cylinderGeometry: any;
-    }
-  }
-}
-
 // Helper to convert lat/lon to 3D position
 const calcPosFromLatLonRad = (lat: number, lon: number, radius: number) => {
   const phi = (90 - lat) * (Math.PI / 180);
@@ -82,6 +50,85 @@ const GlowingSphere = () => {
   );
 };
 
+// --- DATA ARCS COMPONENT ---
+const DataArcs: React.FC<{ places: Place[] }> = ({ places }) => {
+  // Filter for major hubs to connect (e.g., NY, Tokyo, Paris, Moscow)
+  // We use hardcoded connections for the "visual effect" based on existing IDs or indices
+  // p3: NYC, p6: Tokyo, p4: Paris, p5: Moscow
+  const connections = useMemo(() => {
+    const hubs = places.filter(p => ['p3', 'p4', 'p5', 'p6'].includes(p.id));
+    const lines: { start: THREE.Vector3, end: THREE.Vector3, color: string, speed: number }[] = [];
+
+    if (hubs.length < 2) return [];
+
+    // Create a loop: NYC -> Paris -> Moscow -> Tokyo -> NYC
+    const route = ['p3', 'p4', 'p5', 'p6', 'p3']; 
+    
+    for (let i = 0; i < route.length - 1; i++) {
+      const startPlace = places.find(p => p.id === route[i]);
+      const endPlace = places.find(p => p.id === route[i+1]);
+      
+      if (startPlace && endPlace) {
+        const startPos = new THREE.Vector3(...calcPosFromLatLonRad(startPlace.coordinates.lat, startPlace.coordinates.lng, 2));
+        const endPos = new THREE.Vector3(...calcPosFromLatLonRad(endPlace.coordinates.lat, endPlace.coordinates.lng, 2));
+        
+        lines.push({
+          start: startPos,
+          end: endPos,
+          color: i % 2 === 0 ? '#06b6d4' : '#a855f7', // Cyan / Purple alternating
+          speed: 0.5 + Math.random() * 0.5
+        });
+      }
+    }
+    return lines;
+  }, [places]);
+
+  return (
+    <group>
+      {connections.map((conn, i) => (
+        <Arc key={i} start={conn.start} end={conn.end} color={conn.color} speed={conn.speed} />
+      ))}
+    </group>
+  );
+};
+
+const Arc = ({ start, end, color, speed }: { start: THREE.Vector3, end: THREE.Vector3, color: string, speed: number }) => {
+  const curve = useMemo(() => {
+    // Calculate control point (midpoint but higher up)
+    const mid = start.clone().add(end).multiplyScalar(0.5).normalize().multiplyScalar(3.0); // Height of arc
+    return new THREE.QuadraticBezierCurve3(start, mid, end);
+  }, [start, end]);
+
+  const tubeGeo = useMemo(() => {
+    return new THREE.TubeGeometry(curve, 32, 0.005, 8, false);
+  }, [curve]);
+
+  const particleRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    if (particleRef.current) {
+      const t = (state.clock.elapsedTime * speed) % 1;
+      const pos = curve.getPoint(t);
+      particleRef.current.position.copy(pos);
+    }
+  });
+
+  return (
+    <group>
+      {/* Static faint line */}
+      <mesh geometry={tubeGeo}>
+        <meshBasicMaterial color={color} transparent opacity={0.1} />
+      </mesh>
+      
+      {/* Moving Data Packet */}
+      <mesh ref={particleRef}>
+        <sphereGeometry args={[0.04, 8, 8]} />
+        <meshBasicMaterial color={color} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+};
+
 // --- CLUSTER MARKER ---
 const ClusterMarker: React.FC<{ position: [number, number, number]; count: number; onClick: () => void }> = ({ position, count, onClick }) => {
   const groupRef = useRef<THREE.Group>(null);
@@ -107,6 +154,12 @@ const ClusterMarker: React.FC<{ position: [number, number, number]; count: numbe
       onPointerOver={(e) => { e.stopPropagation(); setHover(true); }}
       onPointerOut={(e) => setHover(false)}
     >
+      {/* INVISIBLE HITBOX FOR EASIER CLICKING */}
+      <mesh onClick={(e) => { e.stopPropagation(); onClick(); }} visible={false}>
+        <sphereGeometry args={[0.5, 16, 16]} />
+        <meshBasicMaterial />
+      </mesh>
+
       <mesh onClick={(e) => { e.stopPropagation(); onClick(); }}>
         <sphereGeometry args={[0.08, 16, 16]} />
         <meshBasicMaterial color="#a855f7" toneMapped={false} />
@@ -136,7 +189,7 @@ const ClusterMarker: React.FC<{ position: [number, number, number]; count: numbe
 // --- SINGLE PLACE MARKER (PIN) ---
 const PlaceMarker: React.FC<{ 
   position: [number, number, number]; 
-  selected: boolean;
+  selected: boolean; 
   onClick: () => void;
 }> = ({ position, selected, onClick }) => {
   const meshRef = useRef<THREE.Group>(null);
@@ -163,6 +216,12 @@ const PlaceMarker: React.FC<{
       onPointerOut={() => setHover(false)}
       cursor="pointer"
     >
+      {/* INVISIBLE HITBOX FOR EASIER CLICKING */}
+      <mesh visible={false}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshBasicMaterial />
+      </mesh>
+
       {/* Pin Stem */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.08]}>
         <cylinderGeometry args={[0.005, 0.005, 0.16, 8]} />
@@ -258,6 +317,9 @@ const Scene: React.FC<GlobeProps> = ({ places, selectedPlaceId, onSelectPlace, o
       <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
       
       <GlowingSphere />
+      
+      {/* GLOBAL DATA NETWORK ARCS */}
+      <DataArcs places={places} />
       
       {markers.map((marker) => {
         if (marker.type === 'cluster') {

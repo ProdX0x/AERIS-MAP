@@ -8,42 +8,6 @@ import { Place } from '../types';
 import { MOCK_PLACES } from '../constants';
 import { Button } from '../components/ui/Button';
 
-// Augment JSX namespace to support React Three Fiber intrinsic elements
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      ambientLight: any;
-      cylinderGeometry: any;
-      group: any;
-      mesh: any;
-      meshBasicMaterial: any;
-      pointLight: any;
-      ringGeometry: any;
-      sphereGeometry: any;
-      coneGeometry: any;
-      gridHelper: any;
-    }
-  }
-}
-
-// Augment React's JSX namespace specifically for React 18+ type definitions
-declare module 'react' {
-  namespace JSX {
-    interface IntrinsicElements {
-      ambientLight: any;
-      cylinderGeometry: any;
-      group: any;
-      mesh: any;
-      meshBasicMaterial: any;
-      pointLight: any;
-      ringGeometry: any;
-      sphereGeometry: any;
-      coneGeometry: any;
-      gridHelper: any;
-    }
-  }
-}
-
 interface ARViewProps {
   onExit: () => void;
   onSelectPlace: (id: string) => void;
