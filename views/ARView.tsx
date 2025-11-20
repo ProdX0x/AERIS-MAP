@@ -15,14 +15,16 @@ interface ARViewProps {
 
 // --- Components ---
 
-const ARMarker = ({ 
+interface ARMarkerProps {
+  place: Place;
+  position: [number, number, number];
+  onSelect: (id: string) => void;
+}
+
+const ARMarker: React.FC<ARMarkerProps> = ({ 
   place, 
   position, 
   onSelect 
-}: { 
-  place: Place; 
-  position: [number, number, number], 
-  onSelect: (id: string) => void 
 }) => {
   const groupRef = useRef<THREE.Group>(null);
   const cardRef = useRef<HTMLDivElement>(null);

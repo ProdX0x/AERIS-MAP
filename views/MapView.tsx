@@ -2,9 +2,10 @@
 import React from 'react';
 import { HolographicGlobe } from '../components/3d/HolographicGlobe';
 import { Place } from '../types';
-import { Search, Filter, MapPin, RotateCcw } from 'lucide-react';
+import { Search, Filter, MapPin, RotateCcw, Network } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { GlassPanel } from '../components/ui/GlassPanel';
+import { NetworkFilterType } from '../viewmodels/useAppViewModel';
 
 interface MapViewProps {
   places: Place[];
@@ -12,9 +13,28 @@ interface MapViewProps {
   onSelectPlace: (id: string) => void;
   onSelectCluster: (places: Place[]) => void;
   onToggleAR: () => void;
+  networkFilter: NetworkFilterType;
+  onToggleNetworkFilter: (filter: NetworkFilterType) => void;
 }
 
-export const MapView: React.FC<MapViewProps> = ({ places, selectedPlaceId, onSelectPlace, onSelectCluster, onToggleAR }) => {
+export const MapView: React.FC<MapViewProps> = ({ 
+  places, 
+  selectedPlaceId, 
+  onSelectPlace, 
+  onSelectCluster, 
+  onToggleAR,
+  networkFilter,
+  onToggleNetworkFilter
+}) => {
+  
+  const filters: { id: NetworkFilterType; label: string; color: string }[] = [
+    { id: 'ALL', label: 'ALL', color: 'bg-white' },
+    { id: 'CYBER', label: 'CYBER', color: 'bg-cyan-400' },
+    { id: 'NATURE', label: 'NATURE', color: 'bg-green-400' },
+    { id: 'CULTURE', label: 'CULTURE', color: 'bg-purple-400' },
+    { id: 'ENTERTAINMENT', label: 'FUN', color: 'bg-pink-400' }
+  ];
+
   return (
     <div className="relative w-full h-full">
       {/* 3D Background */}
@@ -23,6 +43,7 @@ export const MapView: React.FC<MapViewProps> = ({ places, selectedPlaceId, onSel
         selectedPlaceId={selectedPlaceId} 
         onSelectPlace={onSelectPlace} 
         onSelectCluster={onSelectCluster}
+        networkFilter={networkFilter}
       />
 
       {/* Top Overlay - Search */}
@@ -50,6 +71,33 @@ export const MapView: React.FC<MapViewProps> = ({ places, selectedPlaceId, onSel
               {cat}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Network Filter UI (Bottom Right) */}
+      <div className="absolute bottom-24 right-4 z-10 flex flex-col gap-2">
+        <div className="bg-black/50 backdrop-blur-xl border border-white/10 p-2 rounded-2xl">
+          <div className="flex items-center gap-1 mb-2 px-1">
+             <Network size={12} className="text-gray-400" />
+             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Data Streams</span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {filters.map(f => {
+               const isActive = networkFilter === f.id;
+               return (
+                 <button 
+                   key={f.id}
+                   onClick={() => onToggleNetworkFilter(f.id)}
+                   className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-[9px] font-bold transition-all ${
+                     isActive ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'
+                   }`}
+                 >
+                    <div className={`w-1.5 h-1.5 rounded-full ${f.color} ${isActive ? 'shadow-[0_0_8px_currentColor]' : 'opacity-50'}`}></div>
+                    <span>{f.label}</span>
+                 </button>
+               );
+            })}
+          </div>
         </div>
       </div>
 

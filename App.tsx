@@ -25,6 +25,8 @@ const App: React.FC = () => {
             onSelectPlace={vm.selectPlace} 
             onSelectCluster={vm.selectCluster}
             onToggleAR={vm.toggleArMode}
+            networkFilter={vm.networkFilter}
+            onToggleNetworkFilter={vm.toggleNetworkFilter}
           />
         );
       case NavTab.EVENTS:

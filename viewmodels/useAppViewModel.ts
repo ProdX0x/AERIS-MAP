@@ -3,12 +3,15 @@ import { useState, useCallback } from 'react';
 import { NavTab, Place, Event } from '../types';
 import { MOCK_PLACES, MOCK_EVENTS } from '../constants';
 
+export type NetworkFilterType = 'ALL' | 'CYBER' | 'NATURE' | 'CULTURE' | 'ENTERTAINMENT';
+
 export const useAppViewModel = () => {
   const [currentTab, setCurrentTab] = useState<NavTab>(NavTab.MAP);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [selectedCluster, setSelectedCluster] = useState<Place[] | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [arMode, setArMode] = useState(false);
+  const [networkFilter, setNetworkFilter] = useState<NetworkFilterType>('ALL');
 
   // State for Dynamic Data (initialized with Mocks)
   const [places, setPlaces] = useState<Place[]>(MOCK_PLACES);
@@ -42,6 +45,10 @@ export const useAppViewModel = () => {
 
   const toggleArMode = useCallback(() => {
     setArMode(prev => !prev);
+  }, []);
+
+  const toggleNetworkFilter = useCallback((filter: NetworkFilterType) => {
+    setNetworkFilter(filter);
   }, []);
 
   const filterEvents = useCallback((query: string) => {
@@ -122,6 +129,8 @@ export const useAppViewModel = () => {
     filterEvents,
     arMode,
     toggleArMode,
+    networkFilter,
+    toggleNetworkFilter,
     publishEvent
   };
 };

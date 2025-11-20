@@ -4,6 +4,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Sphere, Points, PointMaterial, Stars, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { Place } from '../../types';
+import { NetworkFilterType } from '../../viewmodels/useAppViewModel';
 
 // Helper to convert lat/lon to 3D position
 const calcPosFromLatLonRad = (lat: number, lon: number, radius: number) => {
@@ -20,6 +21,7 @@ interface GlobeProps {
   selectedPlaceId?: string | null;
   onSelectPlace: (id: string) => void;
   onSelectCluster: (places: Place[]) => void;
+  networkFilter: NetworkFilterType;
 }
 
 const GlowingSphere = () => {
@@ -50,38 +52,55 @@ const GlowingSphere = () => {
   );
 };
 
-// --- DATA ARCS COMPONENT ---
-const DataArcs: React.FC<{ places: Place[] }> = ({ places }) => {
-  // Filter for major hubs to connect (e.g., NY, Tokyo, Paris, Moscow)
-  // We use hardcoded connections for the "visual effect" based on existing IDs or indices
-  // p3: NYC, p6: Tokyo, p4: Paris, p5: Moscow
+// --- DYNAMIC DATA ARCS COMPONENT ---
+const DataArcs: React.FC<{ places: Place[], filter: NetworkFilterType }> = ({ places, filter }) => {
   const connections = useMemo(() => {
-    const hubs = places.filter(p => ['p3', 'p4', 'p5', 'p6'].includes(p.id));
     const lines: { start: THREE.Vector3, end: THREE.Vector3, color: string, speed: number }[] = [];
-
-    if (hubs.length < 2) return [];
-
-    // Create a loop: NYC -> Paris -> Moscow -> Tokyo -> NYC
-    const route = ['p3', 'p4', 'p5', 'p6', 'p3']; 
     
-    for (let i = 0; i < route.length - 1; i++) {
-      const startPlace = places.find(p => p.id === route[i]);
-      const endPlace = places.find(p => p.id === route[i+1]);
-      
-      if (startPlace && endPlace) {
-        const startPos = new THREE.Vector3(...calcPosFromLatLonRad(startPlace.coordinates.lat, startPlace.coordinates.lng, 2));
-        const endPos = new THREE.Vector3(...calcPosFromLatLonRad(endPlace.coordinates.lat, endPlace.coordinates.lng, 2));
-        
-        lines.push({
-          start: startPos,
-          end: endPos,
-          color: i % 2 === 0 ? '#06b6d4' : '#a855f7', // Cyan / Purple alternating
-          speed: 0.5 + Math.random() * 0.5
-        });
+    // Group places by category
+    const grouped: Record<string, Place[]> = {};
+    places.forEach(p => {
+      const cat = p.category.toUpperCase();
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(p);
+    });
+
+    // Define colors for categories
+    const colors: Record<string, string> = {
+      'CYBER': '#06b6d4', // Cyan
+      'NATURE': '#22c55e', // Green
+      'CULTURE': '#a855f7', // Purple
+      'ENTERTAINMENT': '#ec4899', // Pink
+      'TRANSPORT': '#f59e0b' // Orange
+    };
+
+    // Determine which categories to render based on filter
+    const categoriesToRender = filter === 'ALL' ? Object.keys(grouped) : [filter];
+
+    categoriesToRender.forEach(cat => {
+      const group = grouped[cat];
+      if (group && group.length > 1) {
+        // Create connections between places in the same category
+        for (let i = 0; i < group.length; i++) {
+          // Connect to the next one in the list to form a chain, looping back to start
+          const startPlace = group[i];
+          const endPlace = group[(i + 1) % group.length];
+
+          const startPos = new THREE.Vector3(...calcPosFromLatLonRad(startPlace.coordinates.lat, startPlace.coordinates.lng, 2));
+          const endPos = new THREE.Vector3(...calcPosFromLatLonRad(endPlace.coordinates.lat, endPlace.coordinates.lng, 2));
+          
+          lines.push({
+            start: startPos,
+            end: endPos,
+            color: colors[cat] || '#ffffff',
+            speed: 0.3 + Math.random() * 0.4
+          });
+        }
       }
-    }
+    });
+
     return lines;
-  }, [places]);
+  }, [places, filter]);
 
   return (
     <group>
@@ -92,7 +111,14 @@ const DataArcs: React.FC<{ places: Place[] }> = ({ places }) => {
   );
 };
 
-const Arc = ({ start, end, color, speed }: { start: THREE.Vector3, end: THREE.Vector3, color: string, speed: number }) => {
+interface ArcProps {
+  start: THREE.Vector3;
+  end: THREE.Vector3;
+  color: string;
+  speed: number;
+}
+
+const Arc: React.FC<ArcProps> = ({ start, end, color, speed }) => {
   const curve = useMemo(() => {
     // Calculate control point (midpoint but higher up)
     const mid = start.clone().add(end).multiplyScalar(0.5).normalize().multiplyScalar(3.0); // Height of arc
@@ -154,10 +180,10 @@ const ClusterMarker: React.FC<{ position: [number, number, number]; count: numbe
       onPointerOver={(e) => { e.stopPropagation(); setHover(true); }}
       onPointerOut={(e) => setHover(false)}
     >
-      {/* INVISIBLE HITBOX FOR EASIER CLICKING */}
-      <mesh onClick={(e) => { e.stopPropagation(); onClick(); }} visible={false}>
-        <sphereGeometry args={[0.5, 16, 16]} />
-        <meshBasicMaterial />
+      {/* INVISIBLE HITBOX FOR EASIER CLICKING - Using transparent instead of visible=false for better raycasting */}
+      <mesh onClick={(e) => { e.stopPropagation(); onClick(); }}>
+        <sphereGeometry args={[0.8, 16, 16]} />
+        <meshBasicMaterial transparent opacity={0} />
       </mesh>
 
       <mesh onClick={(e) => { e.stopPropagation(); onClick(); }}>
@@ -217,9 +243,9 @@ const PlaceMarker: React.FC<{
       cursor="pointer"
     >
       {/* INVISIBLE HITBOX FOR EASIER CLICKING */}
-      <mesh visible={false}>
+      <mesh>
         <sphereGeometry args={[0.3, 16, 16]} />
-        <meshBasicMaterial />
+        <meshBasicMaterial transparent opacity={0} />
       </mesh>
 
       {/* Pin Stem */}
@@ -261,7 +287,7 @@ interface SingleData {
 
 type MarkerData = ClusterData | SingleData;
 
-const Scene: React.FC<GlobeProps> = ({ places, selectedPlaceId, onSelectPlace, onSelectCluster }) => {
+const Scene: React.FC<GlobeProps> = ({ places, selectedPlaceId, onSelectPlace, onSelectCluster, networkFilter }) => {
   
   // --- CLUSTERING ALGORITHM ---
   const markers = useMemo(() => {
@@ -319,7 +345,7 @@ const Scene: React.FC<GlobeProps> = ({ places, selectedPlaceId, onSelectPlace, o
       <GlowingSphere />
       
       {/* GLOBAL DATA NETWORK ARCS */}
-      <DataArcs places={places} />
+      <DataArcs places={places} filter={networkFilter} />
       
       {markers.map((marker) => {
         if (marker.type === 'cluster') {
