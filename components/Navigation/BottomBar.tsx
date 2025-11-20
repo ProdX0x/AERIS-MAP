@@ -16,42 +16,28 @@ export const BottomBar: React.FC<BottomBarProps> = ({ currentTab, onTabChange })
   ];
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-40" style={{
-      height: 'calc(85px + env(safe-area-inset-bottom))',
-      paddingBottom: 'env(safe-area-inset-bottom)',
-      background: 'linear-gradient(to top, rgba(5, 11, 20, 0.98), rgba(10, 16, 29, 0.95))',
-      backdropFilter: 'blur(20px)',
-      borderTop: '1px solid rgba(6, 182, 212, 0.1)',
-      boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.3)'
-    }}>
-      <div className="flex items-center justify-around h-full px-4">
+    <div className="absolute bottom-0 left-0 right-0 h-[85px] bg-[#0a101d]/90 backdrop-blur-xl border-t border-white/5 z-40 pb-4">
+      <div className="flex items-center justify-around h-full px-2">
         {tabs.map(tab => {
           const isActive = currentTab === tab.id;
           const Icon = tab.icon;
-
+          
           return (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className="flex flex-col items-center justify-center w-20 h-16 relative group active:scale-95 transition-transform touch-manipulation"
+              className="flex flex-col items-center justify-center w-16 h-full relative group"
             >
-              {/* Active Glow Indicator - Enhanced */}
+              {/* Active Glow Indicator */}
               {isActive && (
-                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] rounded-full bg-cyan-400 neon-glow-cyan"></div>
+                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-cyan-400 shadow-[0_0_10px_cyan]"></div>
               )}
-
-              {/* Icon with enhanced styling */}
-              <div className={`transition-all duration-300 mb-1.5 ${
-                isActive
-                  ? 'text-cyan-400 scale-110'
-                  : 'text-gray-500 group-hover:text-gray-300 group-active:text-cyan-300'
-              }`}>
-                <Icon size={26} strokeWidth={isActive ? 2.5 : 2} />
+              
+              <div className={`transition-colors duration-300 mb-1 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-300'}`}>
+                <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
               </div>
-
-              <span className={`text-[11px] font-bold transition-colors duration-300 uppercase tracking-wide ${
-                isActive ? 'text-cyan-400' : 'text-gray-600 group-hover:text-gray-400'
-              }`}>
+              
+              <span className={`text-[10px] font-medium transition-colors duration-300 ${isActive ? 'text-cyan-400' : 'text-gray-600'}`}>
                 {tab.label}
               </span>
             </button>

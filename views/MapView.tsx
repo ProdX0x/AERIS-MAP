@@ -51,33 +51,25 @@ export const MapView: React.FC<MapViewProps> = ({
 
       {/* Top Overlay - Search */}
       <div className="absolute top-0 left-0 right-0 p-4 pt-16 z-10">
-        <div className="flex items-center gap-3 p-3 rounded-full mx-2 neon-border-cyan" style={{
-          background: 'rgba(10, 14, 26, 0.85)',
-          backdropFilter: 'blur(20px)'
-        }}>
-          <Search className="w-5 h-5 text-cyan-400" />
-          <input
-            type="text"
-            placeholder="Search Categories & Filters"
-            className="bg-transparent border-none outline-none text-white placeholder-gray-400 flex-1 text-sm touch-manipulation"
+        <GlassPanel className="flex items-center gap-3 p-3 !rounded-full mx-2">
+          <Search className="w-5 h-5 text-gray-400" />
+          <input 
+            type="text" 
+            placeholder="Search Categories & Filters" 
+            className="bg-transparent border-none outline-none text-white placeholder-gray-400 flex-1 text-sm"
           />
-          <div className="w-px h-6 bg-cyan-500/30 mx-1"></div>
-          <Button variant="ghost" size="sm" className="!p-2 hover:bg-cyan-500/20 transition-colors active:scale-95">
-            <Filter className="w-5 h-5 text-cyan-400" />
+          <div className="w-px h-6 bg-white/20 mx-1"></div>
+          <Button variant="ghost" size="sm" className="!p-1">
+            <Filter className="w-5 h-5 text-white" />
           </Button>
-        </div>
+        </GlassPanel>
 
         {/* Categories */}
         <div className="flex gap-2 mt-4 overflow-x-auto px-2 pb-2 no-scrollbar">
           {['Restaurants', 'Bars & Clubs', 'Shops', 'Leisure', 'Events'].map((cat) => (
-            <button
+            <button 
               key={cat}
-              className="whitespace-nowrap px-4 py-2 rounded-full border text-xs font-bold text-gray-300 hover:text-white hover:border-cyan-500/50 transition-all active:scale-95"
-              style={{
-                background: 'rgba(10, 14, 26, 0.7)',
-                backdropFilter: 'blur(10px)',
-                borderColor: 'rgba(255, 255, 255, 0.1)'
-              }}
+              className="whitespace-nowrap px-4 py-1.5 rounded-full bg-black/30 backdrop-blur-md border border-white/20 text-xs font-medium text-gray-200 hover:bg-white/10 transition-colors"
             >
               {cat}
             </button>
@@ -114,32 +106,21 @@ export const MapView: React.FC<MapViewProps> = ({
         </div>
       )}
 
-      {/* AR Toggle (Bottom Center) - Enhanced */}
+      {/* AR Toggle (Bottom Center) */}
       <div className="absolute bottom-24 left-0 right-0 flex justify-center z-10 pointer-events-none">
         <div className="pointer-events-auto relative group">
-           {/* Animated Rings - More vibrant */}
-           <div className="absolute inset-0 -m-5 rounded-full border-2 border-cyan-500/40 animate-[spin_10s_linear_infinite]"></div>
-           <div className="absolute inset-0 -m-3 rounded-full border-2 border-purple-500/40 animate-[spin_7s_linear_infinite_reverse]"></div>
-           <div className="absolute inset-0 -m-6 rounded-full bg-gradient-to-r from-cyan-500/10 to-purple-500/10 blur-xl animate-pulse"></div>
-
-           <button
+           {/* Animated Rings */}
+           <div className="absolute inset-0 -m-4 rounded-full border border-cyan-500/30 animate-[spin_10s_linear_infinite]"></div>
+           <div className="absolute inset-0 -m-2 rounded-full border border-purple-500/30 animate-[spin_7s_linear_infinite_reverse]"></div>
+           
+           <button 
             onClick={onToggleAR}
-            className="relative w-20 h-20 rounded-full border-2 flex flex-col items-center justify-center active:scale-95 transition-all"
-            style={{
-              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
-              backdropFilter: 'blur(20px)',
-              borderColor: 'rgba(6, 182, 212, 0.5)',
-              boxShadow: '0 0 20px rgba(6, 182, 212, 0.4), 0 0 40px rgba(168, 85, 247, 0.3)'
-            }}
+            className="relative w-16 h-16 rounded-full bg-black/50 backdrop-blur-xl border border-white/20 flex flex-col items-center justify-center group-hover:bg-cyan-900/30 transition-all"
            >
-             <span className="text-3xl font-black neon-text-cyan" style={{
-               background: 'linear-gradient(135deg, #06b6d4 0%, #a855f7 100%)',
-               WebkitBackgroundClip: 'text',
-               WebkitTextFillColor: 'transparent'
-             }}>AR</span>
+             <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-400">AR</span>
            </button>
-           <div className="absolute top-full mt-3 w-full text-center">
-             <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest">AR View</span>
+           <div className="absolute top-full mt-2 w-full text-center">
+             <span className="text-[10px] text-gray-400 uppercase tracking-widest">AR View</span>
            </div>
         </div>
       </div>
